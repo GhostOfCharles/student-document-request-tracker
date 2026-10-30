@@ -53,4 +53,3 @@ flowchart TD
 Notifications use unique recipient/event keys, jobs use unique idempotency keys, requests/revisions use UUID keys and canonical SHA-256 payload hashes. Stale staff row versions fail with 409. Claims use MySQL row locks and SKIP LOCKED. A stale worker cannot finalize a reclaimed lease. Cleanup marks removed metadata first, then retries byte deletion on later scans.
 
 The designated scheduler holds a process-lifetime MySQL named lock; a second instance exits. Scheduled IDs are explicit, coalesced and max_instances=1. Startup processes pending work, recovers expired leases and abandoned runs, scans aging and cleanup, and generates a delayed current-date summary only if local time is already 17:00 or later. It does not manufacture past-day snapshots.
-

@@ -1,0 +1,88 @@
+{"timestamp": "2026-10-30T15:35:00.788185+00:00", "event": "screenshot", "path": "screenshots/login-desktop.png"}
+{"timestamp": "2026-10-30T15:35:01.225792+00:00", "event": "screenshot", "path": "screenshots/login-validation.png"}
+{"timestamp": "2026-10-30T15:35:02.671225+00:00", "event": "login", "account": "student@example.test"}
+{"timestamp": "2026-10-30T15:35:02.748966+00:00", "event": "screenshot", "path": "screenshots/student-dashboard-desktop.png"}
+{"timestamp": "2026-10-30T15:35:03.252980+00:00", "event": "screenshot", "path": "screenshots/service-requirements.png"}
+{"timestamp": "2026-10-30T15:35:03.541261+00:00", "event": "form_accessibility", "snapshot": "- heading \"Document requests\" [level=2]\n- button \"Refresh current view\"\n- button \"Sign out\"\n- text: Synthetic Student One \u2022 Student\n- button \"Dashboard\"\n- button \"Services\"\n- button \"Requests\"\n- button \"Notifications\"\n- group:\n  - text: Create request Certificate of Enrollment \u2022 version 1 \u2022 3 calendar days Use synthetic information and fictional evidence only.\n  - textbox \"Purpose of request *\"\n  - text: 200 characters remaining\n  - button \"Request category *\"\n  - 'button \"Preferred date: Choose date\"'\n  - checkbox \"I confirm this is synthetic test data *\"\n  - text: Supporting evidence * PDF/JPEG/PNG, up to 5 MiB.\n  - button \"Upload Supporting evidence\"\n  - text: Fictional manual payment \u2022 PHP 50.00 Upload a fictional test receipt. No money is collected.\n  - textbox \"Fictional payment reference\"\n  - button \"Upload fictional receipt\"\n  - button \"Submit request\""}
+{"timestamp": "2026-10-30T15:35:03.677459+00:00", "event": "screenshot", "path": "screenshots/dynamic-form-desktop.png"}
+{"timestamp": "2026-10-30T15:35:05.680644+00:00", "event": "private_upload", "file_id": 13, "filename": "browser-synthetic.png"}
+{"timestamp": "2026-10-30T15:35:06.910369+00:00", "event": "private_upload", "file_id": 14, "filename": "browser-synthetic.png"}
+{"timestamp": "2026-10-30T15:35:07.083147+00:00", "event": "screenshot", "path": "screenshots/filled-submission-form.png"}
+{"timestamp": "2026-10-30T15:35:07.107028+00:00", "event": "filled_form", "snapshot": "- heading \"Document requests\" [level=2]\n- button \"Refresh current view\"\n- button \"Sign out\"\n- text: Synthetic Student One \u2022 Student\n- button \"Dashboard\"\n- button \"Services\"\n- button \"Requests\"\n- button \"Notifications\"\n- group:\n  - text: Create request Certificate of Enrollment \u2022 version 1 \u2022 3 calendar days Use synthetic information and fictional evidence only.\n  - textbox \"Purpose of request *\"\n  - text: 171 characters remaining\n  - button \"Request category * Scholarship\"\n  - 'button \"Preferred date: Choose date\"'\n  - checkbox \"I confirm this is synthetic test data *\" [checked]\n  - text: Supporting evidence * PDF/JPEG/PNG, up to 5 MiB.\n  - 'button \"Replace Supporting evidence: browser-synthetic.png\"'\n  - text: Fictional manual payment \u2022 PHP 50.00 Upload a fictional test receipt. No money is collected.\n  - textbox \"Fictional payment reference\": FICTIONAL-BROWSER-001\n  - 'button \"Replace fictional receipt: browser-synthetic.png\"'\n  - button \"Submit request\""}
+{"timestamp": "2026-10-30T15:35:07.210400+00:00", "event": "submission_prompt", "snapshot": "- alertdialog:\n  - text: Confirm submission Submit this synthetic evidence as an immutable revision?\n  - button \"Go back\"\n  - button \"Confirm submit\""}
+{"timestamp": "2026-10-30T15:35:07.635295+00:00", "event": "screenshot", "path": "screenshots/submission-confirmation.png"}
+{"timestamp": "2026-10-30T15:35:07.635470+00:00", "event": "submitted", "request_id": 4, "request_number": "SDRT-2026-000004"}
+{"timestamp": "2026-10-30T15:35:10.637633+00:00", "event": "login", "account": "registrar@example.test"}
+{"timestamp": "2026-10-30T15:35:11.706146+00:00", "event": "workflow_action", "action": "Begin review", "status": 200}
+{"timestamp": "2026-10-30T15:35:11.841044+00:00", "event": "screenshot", "path": "screenshots/staff-review-payment.png"}
+{"timestamp": "2026-10-30T15:35:12.140803+00:00", "event": "workflow_action", "action": "Approve requirements", "status": 409}
+{"timestamp": "2026-10-30T15:35:12.292419+00:00", "event": "screenshot", "path": "screenshots/adverse-payment-not-verified.png"}
+{"timestamp": "2026-10-30T15:35:14.482915+00:00", "event": "screenshot", "path": "screenshots/correction-form.png"}
+{"timestamp": "2026-10-30T15:35:15.356715+00:00", "event": "private_upload", "file_id": 15, "filename": "browser-replacement.png"}
+python.exe : Traceback (most recent call last):
+At line:2 char:1
++ & backend/.venv/Scripts/python.exe scripts/browser_demo.py *> evidenc ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "C:\Users\charl\Projects\Flutter\Student Document Request 
+Tracker\student_document_request_tracker\scripts\browser_demo.py", line 242, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\charl\Projects\Flutter\Student Document Request 
+Tracker\student_document_request_tracker\scripts\browser_demo.py", line 180, in main
+    ).to_be_visible()
+      ~~~~~~~~~~~~~^^
+  File "C:\Users\charl\Projects\Flutter\Student Document Request 
+Tracker\student_document_request_tracker\backend\.venv\Lib\site-packages\playwright\sync_api\_generated.py", line 
+14811, in to_be_visible
+    self._sync(
+    ~~~~~~~~~~^
+        self._impl_obj.to_be_visible(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            timeout=to_milliseconds(timeout), visible=visible
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        )
+        ^
+    )
+    ^
+  File "C:\Users\charl\Projects\Flutter\Student Document Request 
+Tracker\student_document_request_tracker\backend\.venv\Lib\site-packages\playwright\_impl\_sync_base.py", line 111, in 
+_sync
+    return task.result()
+           ~~~~~~~~~~~^^
+  File "C:\Users\charl\Projects\Flutter\Student Document Request 
+Tracker\student_document_request_tracker\backend\.venv\Lib\site-packages\playwright\_impl\_assertions.py", line 852, 
+in to_be_visible
+    await self._expect_impl(
+    ...<5 lines>...
+    )
+  File "C:\Users\charl\Projects\Flutter\Student Document Request 
+Tracker\student_document_request_tracker\backend\.venv\Lib\site-packages\playwright\_impl\_assertions.py", line 128, 
+in _expect_impl
+    _record_soft_or_raise(
+    ~~~~~~~~~~~~~~~~~~~~~^
+        AssertionError(
+        ^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        self._is_soft,
+        ^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\charl\Projects\Flutter\Student Document Request 
+Tracker\student_document_request_tracker\backend\.venv\Lib\site-packages\playwright\_impl\_assertions.py", line 60, in 
+_record_soft_or_raise
+    raise error
+AssertionError: Locator expected to be visible
+Actual value: None
+Error: strict mode violation: get_by_text(re.compile(r"Submission confirmed:.*revision 2")) resolved to 2 elements:
+    1) <flt-announcement-polite aria-live="polite">Submission confirmed: SDRT-2026-000004 � 
+revision�</flt-announcement-polite> aka locator("flt-announcement-polite")
+    2) <span>Submission confirmed: SDRT-2026-000004 � revision�</span> aka 
+locator("#flt-semantic-node-164").get_by_text("Submission confirmed: SDRT-")
+ 
+Call log:
+  - Expect "to_be_visible" get_by_text(re.compile(r"Submission confirmed:.*revision 2")) with timeout 5000ms
+  - waiting for get_by_text(re.compile(r"Submission confirmed:.*revision 2"))
+

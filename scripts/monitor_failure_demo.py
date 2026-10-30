@@ -31,4 +31,3 @@ with sync_playwright() as p:
     browser.close()
 (OUT/'verification/browser-failure-monitor.json').write_text(json.dumps(events,indent=2),encoding='utf-8')
 print('PASS actual staff UI: durable exhausted failure, attempts 1–9, no further retry, audited manual handling.')
-

@@ -104,4 +104,3 @@ def test_lease_renewal_and_recipient_authorization(student,staff):
         assert len(rows(db,m.notifications,m.notifications.c.automation_job_id==bad))==1
         assert not rows(db,m.notifications,m.notifications.c.recipient_user_id==other['id'],m.notifications.c.event_key=='unauthorized')
     print('PASS lease extension and fencing; unauthorized recipient fails permanently with bounded staff notice')
-

@@ -29,11 +29,15 @@ def shot(page, name):
     record("screenshot", path="screenshots/" + name)
 
 
-def enable(page):
+def enable(page, authenticated=False):
     page.goto("http://localhost:8000")
     page.wait_for_selector("flt-semantics-placeholder", state="attached")
     page.locator("flt-semantics-placeholder").evaluate("(e)=>e.click()")
-    expect(page.get_by_role("textbox").first).to_be_visible()
+    if authenticated:
+        expect(page.get_by_role('button',name='Services',exact=True)).to_be_visible()
+        expect(page.get_by_role('button',name='Refresh current view')).to_be_enabled()
+    else:
+        expect(page.get_by_role("textbox").first).to_be_visible()
 
 
 def login(page, email):
@@ -149,7 +153,7 @@ def main():
         assert response.value.status == 201, result
         rid = result["id"]
         number = result["request_number"]
-        expect(student.get_by_text(re.compile("Submission confirmed:"))).to_be_visible()
+        expect(student.get_by_text(re.compile("Submission confirmed:")).last).to_be_visible()
         shot(student, "submission-confirmation.png")
         record("submitted", request_id=rid, request_number=number)
         enable(staff)
@@ -176,7 +180,7 @@ def main():
         student.get_by_role("button", name="Submit request", exact=True).click()
         student.get_by_role("button", name="Confirm submit", exact=True).click()
         expect(
-            student.get_by_text(re.compile("Submission confirmed:.*revision 2"))
+            student.get_by_text(re.compile("Submission confirmed:.*revision 2")).last
         ).to_be_visible()
         record("correction_resubmitted", request_id=rid)
         staff.get_by_role("button", name="Refresh current view").click()
@@ -192,14 +196,20 @@ def main():
         shot(student, "immutable-original-revision.png")
         student.get_by_role("button", name="Close", exact=True).click()
         record("paid_lifecycle_complete", request_id=rid, revisions=2)
-        student.set_viewport_size({"width": 390, "height": 844})
+        student=student_context.new_page()
+        student.set_viewport_size({'width':390,'height':844})
+        student.on('pageerror',lambda e:errors.append(str(e)))
+        enable(student,authenticated=True)
+        nav(student,'Requests')
+        student.get_by_role('button',name=re.compile(number)).click()
+        expect(student.get_by_text(re.compile('Completed.*revision 2'))).to_be_visible()
         shot(student, "tracking-narrow.png")
         nav(student, "Services")
         shot(student, "services-narrow.png")
         # Offline browser state is a real failed HTTP request, not a fake response.
         student_context.set_offline(True)
         student.get_by_role("button", name="Refresh current view").click()
-        expect(student.get_by_text(re.compile("NETWORK_ERROR"))).to_be_visible(
+        expect(student.get_by_text(re.compile("NETWORK_ERROR")).last).to_be_visible(
             timeout=30000
         )
         shot(student, "network-error-narrow.png")
@@ -213,7 +223,11 @@ def main():
             "button", name="Regenerate current local date", exact=True
         ).click()
         expect(staff.get_by_text(re.compile("Asia/Manila date"))).to_be_visible()
-        staff.set_viewport_size({"width": 390, "height": 844})
+        staff=staff_context.new_page()
+        staff.set_viewport_size({'width':390,'height':844})
+        staff.on('pageerror',lambda e:errors.append(str(e)))
+        enable(staff,authenticated=True)
+        nav(staff,'Automation')
         shot(staff, "automation-monitor-narrow.png")
         # Notifications are delivered by the designated scheduler, never faked.
         nav(student, "Notifications")

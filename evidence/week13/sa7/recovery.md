@@ -13,4 +13,3 @@ Use synthetic development data only. An authorized registrar signs in and opens 
 Startup scans evaluate present state, not every missed interval. A missing current-day summary after 17:00 becomes a delayed current-state snapshot with its actual generated_at; past snapshots are never reconstructed. Expired unused uploads are marked removed before byte deletion, which is retried by cleanup. Unreferenced upload remnants are removed only after a 24-hour safety interval.
 
 Database connection failures can prevent immediate error recording. Previously committed pending/running work and lease expiry preserve intent; safe worker logs identify dependency unavailability. Preserve the database and private files together when transferring the local demo. No production backup/restore assessment is claimed.
-

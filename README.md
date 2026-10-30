@@ -22,6 +22,15 @@ MySQL binary logging may require the administrator to authorize trigger creation
 
 Official ZIP installation and initialization references: [Windows archive installation](https://dev.mysql.com/doc/mysql-installation-excerpt/8.0/en/windows-install-archive.html) and [MySQL initialization](https://dev.mysql.com/doc/refman/8.4/en/data-directory-initialization.html). The local verification server is an isolated binary install under %LOCALAPPDATA%\SDRT-week13-tools, bound only to 127.0.0.1:3307, with mysqlx disabled. It is not a Windows service. Its generated administrator password is stored outside the repository in that private tools directory; no empty root login remains.
 
+To restart that already-initialized workstation instance after a reboot (only when port 3307 is free):
+
+~~~powershell
+$sdrtTools = Join-Path $env:LOCALAPPDATA 'SDRT-week13-tools'
+Start-Process -FilePath "$sdrtTools/mysql-8.4.13-winx64/bin/mysqld.exe" -ArgumentList @('--no-defaults',"--basedir=$sdrtTools/mysql-8.4.13-winx64","--datadir=$sdrtTools/data",'--port=3307','--bind-address=127.0.0.1','--mysqlx=OFF','--log-bin-trust-function-creators=ON',"--log-error=$sdrtTools/mysql-error.log") -WindowStyle Hidden
+~~~
+
+Do not reinitialize that data directory. A clean installation uses your own initialized MySQL instance and the configuration steps below.
+
 From the repository root in PowerShell:
 
 ~~~powershell
@@ -114,4 +123,3 @@ See docs/api-contract.md, docs/architecture/week13.md, docs/implementation-decis
 The implementation is local. Review git log and the Week 13 report for the verified local commit. Create a private remote only under the user's/instructor's directions, push the reviewed source, and invite Sir Nacorda using his verified GitHub username and course instructions. Do not include .env, .private, database files or tool binaries. No invitation acceptance is claimed.
 
 Weeks 14–18 are not implemented or assessed by this assignment. Stop at the Week 13 report.
-

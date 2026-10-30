@@ -1,0 +1,10 @@
+* text=auto
+*.py text eol=lf
+*.dart text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.txt text eol=lf
+*.log text eol=lf -whitespace
+*.docx binary
+*.png binary

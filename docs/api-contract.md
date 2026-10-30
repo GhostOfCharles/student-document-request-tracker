@@ -51,4 +51,3 @@ A paid service additionally supplies payment.reference and payment.receipt_file_
 Errors use {code,detail,field_errors,trace_id}; no SQL, file path or secret is returned. Important statuses: 201 new resource; 200 read/action/replay; 204 logout/deletion; 401 authentication/credentials; 403 permission/CSRF; 404 inaccessible resource/missing summary; 409 workflow/concurrency/idempotency/payment; 413 file size; 415 file type; 422 validation; 429 login throttling with Retry-After; 500 safe internal failure; 503 database unavailable.
 
 The UI combines Week 13 views; it does not implement registration, password recovery or service-management endpoints.
-

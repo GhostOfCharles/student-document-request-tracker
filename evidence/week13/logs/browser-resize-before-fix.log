@@ -1,0 +1,116 @@
+{"timestamp": "2026-10-30T15:35:47.338239+00:00", "event": "screenshot", "path": "screenshots/login-desktop.png"}
+{"timestamp": "2026-10-30T15:35:47.755222+00:00", "event": "screenshot", "path": "screenshots/login-validation.png"}
+{"timestamp": "2026-10-30T15:35:49.027651+00:00", "event": "login", "account": "student@example.test"}
+{"timestamp": "2026-10-30T15:35:49.140060+00:00", "event": "screenshot", "path": "screenshots/student-dashboard-desktop.png"}
+{"timestamp": "2026-10-30T15:35:49.568486+00:00", "event": "screenshot", "path": "screenshots/service-requirements.png"}
+{"timestamp": "2026-10-30T15:35:49.830115+00:00", "event": "form_accessibility", "snapshot": "- heading \"Document requests\" [level=2]\n- button \"Refresh current view\"\n- button \"Sign out\"\n- text: Synthetic Student One \u2022 Student\n- button \"Dashboard\"\n- button \"Services\"\n- button \"Requests\"\n- button \"Notifications\"\n- group:\n  - text: Create request Certificate of Enrollment \u2022 version 1 \u2022 3 calendar days Use synthetic information and fictional evidence only.\n  - textbox \"Purpose of request *\"\n  - text: 200 characters remaining\n  - button \"Request category *\"\n  - 'button \"Preferred date: Choose date\"'\n  - checkbox \"I confirm this is synthetic test data *\"\n  - text: Supporting evidence * PDF/JPEG/PNG, up to 5 MiB.\n  - button \"Upload Supporting evidence\"\n  - text: Fictional manual payment \u2022 PHP 50.00 Upload a fictional test receipt. No money is collected.\n  - textbox \"Fictional payment reference\"\n  - button \"Upload fictional receipt\"\n  - button \"Submit request\""}
+{"timestamp": "2026-10-30T15:35:49.957011+00:00", "event": "screenshot", "path": "screenshots/dynamic-form-desktop.png"}
+{"timestamp": "2026-10-30T15:35:51.956295+00:00", "event": "private_upload", "file_id": 16, "filename": "browser-synthetic.png"}
+{"timestamp": "2026-10-30T15:35:53.151512+00:00", "event": "private_upload", "file_id": 17, "filename": "browser-synthetic.png"}
+{"timestamp": "2026-10-30T15:35:53.272928+00:00", "event": "screenshot", "path": "screenshots/filled-submission-form.png"}
+{"timestamp": "2026-10-30T15:35:53.290898+00:00", "event": "filled_form", "snapshot": "- heading \"Document requests\" [level=2]\n- button \"Refresh current view\"\n- button \"Sign out\"\n- text: Synthetic Student One \u2022 Student\n- button \"Dashboard\"\n- button \"Services\"\n- button \"Requests\"\n- button \"Notifications\"\n- group:\n  - text: Create request Certificate of Enrollment \u2022 version 1 \u2022 3 calendar days Use synthetic information and fictional evidence only.\n  - textbox \"Purpose of request *\"\n  - text: 171 characters remaining\n  - button \"Request category * Scholarship\"\n  - 'button \"Preferred date: Choose date\"'\n  - checkbox \"I confirm this is synthetic test data *\" [checked]\n  - text: Supporting evidence * PDF/JPEG/PNG, up to 5 MiB.\n  - 'button \"Replace Supporting evidence: browser-synthetic.png\"'\n  - text: Fictional manual payment \u2022 PHP 50.00 Upload a fictional test receipt. No money is collected.\n  - textbox \"Fictional payment reference\": FICTIONAL-BROWSER-001\n  - 'button \"Replace fictional receipt: browser-synthetic.png\"'\n  - button \"Submit request\""}
+{"timestamp": "2026-10-30T15:35:53.397842+00:00", "event": "submission_prompt", "snapshot": "- alertdialog:\n  - text: Confirm submission Submit this synthetic evidence as an immutable revision?\n  - button \"Go back\"\n  - button \"Confirm submit\""}
+{"timestamp": "2026-10-30T15:35:53.717456+00:00", "event": "screenshot", "path": "screenshots/submission-confirmation.png"}
+{"timestamp": "2026-10-30T15:35:53.717594+00:00", "event": "submitted", "request_id": 5, "request_number": "SDRT-2026-000005"}
+{"timestamp": "2026-10-30T15:35:56.696559+00:00", "event": "login", "account": "registrar@example.test"}
+{"timestamp": "2026-10-30T15:35:57.733086+00:00", "event": "workflow_action", "action": "Begin review", "status": 200}
+{"timestamp": "2026-10-30T15:35:57.857337+00:00", "event": "screenshot", "path": "screenshots/staff-review-payment.png"}
+{"timestamp": "2026-10-30T15:35:58.102658+00:00", "event": "workflow_action", "action": "Approve requirements", "status": 409}
+{"timestamp": "2026-10-30T15:35:58.246210+00:00", "event": "screenshot", "path": "screenshots/adverse-payment-not-verified.png"}
+{"timestamp": "2026-10-30T15:35:59.943425+00:00", "event": "screenshot", "path": "screenshots/correction-form.png"}
+{"timestamp": "2026-10-30T15:36:00.593934+00:00", "event": "private_upload", "file_id": 18, "filename": "browser-replacement.png"}
+{"timestamp": "2026-10-30T15:36:00.910790+00:00", "event": "correction_resubmitted", "request_id": 5}
+{"timestamp": "2026-10-30T15:36:01.726277+00:00", "event": "workflow_action", "action": "Payment: Verified", "status": 201}
+{"timestamp": "2026-10-30T15:36:02.176560+00:00", "event": "workflow_action", "action": "Approve requirements", "status": 200}
+{"timestamp": "2026-10-30T15:36:02.518474+00:00", "event": "workflow_action", "action": "Mark ready for release", "status": 200}
+{"timestamp": "2026-10-30T15:36:02.826141+00:00", "event": "workflow_action", "action": "Confirm actual handover", "status": 200}
+{"timestamp": "2026-10-30T15:36:03.451996+00:00", "event": "workflow_action", "action": "Acknowledge receipt", "status": 200}
+{"timestamp": "2026-10-30T15:36:03.573631+00:00", "event": "screenshot", "path": "screenshots/completed-timeline-desktop.png"}
+{"timestamp": "2026-10-30T15:36:03.751399+00:00", "event": "screenshot", "path": "screenshots/immutable-original-revision.png"}
+{"timestamp": "2026-10-30T15:36:03.842586+00:00", "event": "paid_lifecycle_complete", "request_id": 5, "revisions": 2}
+{"timestamp": "2026-10-30T15:36:03.994870+00:00", "event": "screenshot", "path": "screenshots/tracking-narrow.png"}
+python.exe : Traceback (most recent call last):
+At line:2 char:107
++ ... re-fix.log; & backend/.venv/Scripts/python.exe scripts/browser_demo.p ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "C:\Users\charl\Projects\Flutter\Student Document Request 
+Tracker\student_document_request_tracker\scripts\browser_demo.py", line 242, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\charl\Projects\Flutter\Student Document Request 
+Tracker\student_document_request_tracker\scripts\browser_demo.py", line 197, in main
+    nav(student, "Services")
+    ~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\charl\Projects\Flutter\Student Document Request 
+Tracker\student_document_request_tracker\scripts\browser_demo.py", line 52, in nav
+    page.get_by_role("button", name=name, exact=True).click()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\charl\Projects\Flutter\Student Document Request 
+Tracker\student_document_request_tracker\backend\.venv\Lib\site-packages\playwright\sync_api\_generated.py", line 
+11021, in click
+    self._sync(
+    ~~~~~~~~~~^
+        self._impl_obj.click(
+        ^^^^^^^^^^^^^^^^^^^^^
+    ...<11 lines>...
+        )
+        ^
+    )
+    ^
+  File "C:\Users\charl\Projects\Flutter\Student Document Request 
+Tracker\student_document_request_tracker\backend\.venv\Lib\site-packages\playwright\_impl\_sync_base.py", line 111, in 
+_sync
+    return task.result()
+           ~~~~~~~~~~~^^
+  File "C:\Users\charl\Projects\Flutter\Student Document Request 
+Tracker\student_document_request_tracker\backend\.venv\Lib\site-packages\playwright\_impl\_locator.py", line 174, in 
+click
+    return await self._frame._click(self._selector, strict=True, **params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\charl\Projects\Flutter\Student Document Request 
+Tracker\student_document_request_tracker\backend\.venv\Lib\site-packages\playwright\_impl\_frame.py", line 598, in 
+_click
+    await self._channel.send("click", self._timeout, locals_to_params(locals()))
+  File "C:\Users\charl\Projects\Flutter\Student Document Request 
+Tracker\student_document_request_tracker\backend\.venv\Lib\site-packages\playwright\_impl\_connection.py", line 78, in 
+send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\charl\Projects\Flutter\Student Document Request 
+Tracker\student_document_request_tracker\backend\.venv\Lib\site-packages\playwright\_impl\_connection.py", line 636, 
+in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for get_by_role("button", name="Services", exact=True)
+    - locator resolved to <flt-semantics tabindex="0" role="button" flt-tappable="" 
+id="flt-semantic-node-17">Services</flt-semantics>
+  - attempting click action
+    2 � waiting for element to be visible, enabled and stable
+      - element is visible, enabled and stable
+      - scrolling into view if needed
+      - done scrolling
+      - element is outside of the viewport
+    - retrying click action
+    - waiting 20ms
+    2 � waiting for element to be visible, enabled and stable
+      - element is visible, enabled and stable
+      - scrolling into view if needed
+      - done scrolling
+      - element is outside of the viewport
+    - retrying click action
+      - waiting 100ms
+    56 � waiting for element to be visible, enabled and stable
+       - element is visible, enabled and stable
+       - scrolling into view if needed
+       - done scrolling
+       - element is outside of the viewport
+     - retrying click action
+       - waiting 500ms
+
