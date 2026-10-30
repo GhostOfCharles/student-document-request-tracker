@@ -1,0 +1,251 @@
+{
+  "mysql_version": "8.4.13",
+  "tables": [
+    "alembic_version",
+    "audit_logs",
+    "auth_sessions",
+    "automation_attempts",
+    "automation_jobs",
+    "automation_runs",
+    "correction_items",
+    "correction_rounds",
+    "daily_request_summaries",
+    "document_requests",
+    "document_service_versions",
+    "document_services",
+    "notifications",
+    "payment_reviews",
+    "request_alerts",
+    "request_attachments",
+    "request_field_values",
+    "request_notes",
+    "request_revisions",
+    "request_status_history",
+    "requirement_options",
+    "service_requirements",
+    "stored_files",
+    "users"
+  ],
+  "triggers": [
+    "immutable_audit_logs_update",
+    "immutable_audit_logs_delete",
+    "immutable_published_version_update",
+    "immutable_published_version_delete",
+    "immutable_payment_reviews_update",
+    "immutable_payment_reviews_delete",
+    "immutable_request_attachments_update",
+    "immutable_request_attachments_delete",
+    "immutable_request_field_values_update",
+    "immutable_request_field_values_delete",
+    "immutable_request_notes_update",
+    "immutable_request_notes_delete",
+    "immutable_request_revisions_update",
+    "immutable_request_revisions_delete",
+    "immutable_request_status_history_update",
+    "immutable_request_status_history_delete",
+    "immutable_published_option_insert",
+    "immutable_published_option_update",
+    "immutable_published_option_delete",
+    "immutable_published_requirement_insert",
+    "immutable_published_requirement_update",
+    "immutable_published_requirement_delete"
+  ],
+  "constraints": {
+    "users": {
+      "checks": [
+        "ck_users_0",
+        "ck_users_1",
+        "ck_users_2"
+      ],
+      "unique": [
+        "email",
+        "staff_number",
+        "student_number"
+      ],
+      "foreign_keys": 0
+    },
+    "auth_sessions": {
+      "checks": [],
+      "unique": [
+        "session_token_hash"
+      ],
+      "foreign_keys": 1
+    },
+    "document_services": {
+      "checks": [],
+      "unique": [
+        "service_code"
+      ],
+      "foreign_keys": 2
+    },
+    "document_service_versions": {
+      "checks": [
+        "ck_document_service_versions_0",
+        "ck_document_service_versions_1",
+        "ck_document_service_versions_2"
+      ],
+      "unique": [
+        "uq_document_service_versions_0"
+      ],
+      "foreign_keys": 2
+    },
+    "service_requirements": {
+      "checks": [
+        "ck_service_requirements_0"
+      ],
+      "unique": [
+        "uq_service_requirements_0",
+        "uq_service_requirements_1"
+      ],
+      "foreign_keys": 1
+    },
+    "requirement_options": {
+      "checks": [],
+      "unique": [
+        "uq_requirement_options_0"
+      ],
+      "foreign_keys": 1
+    },
+    "document_requests": {
+      "checks": [
+        "ck_document_requests_0",
+        "ck_document_requests_1"
+      ],
+      "unique": [
+        "client_submission_key",
+        "request_number"
+      ],
+      "foreign_keys": 4
+    },
+    "request_revisions": {
+      "checks": [
+        "ck_request_revisions_0",
+        "ck_request_revisions_1"
+      ],
+      "unique": [
+        "client_submission_key",
+        "uq_request_revisions_0"
+      ],
+      "foreign_keys": 3
+    },
+    "request_field_values": {
+      "checks": [
+        "ck_request_field_values_0"
+      ],
+      "unique": [
+        "uq_request_field_values_0"
+      ],
+      "foreign_keys": 3
+    },
+    "stored_files": {
+      "checks": [
+        "ck_stored_files_0",
+        "ck_stored_files_1"
+      ],
+      "unique": [
+        "storage_key"
+      ],
+      "foreign_keys": 1
+    },
+    "request_attachments": {
+      "checks": [],
+      "unique": [
+        "uq_request_attachments_0"
+      ],
+      "foreign_keys": 3
+    },
+    "payment_reviews": {
+      "checks": [
+        "ck_payment_reviews_0"
+      ],
+      "unique": [],
+      "foreign_keys": 2
+    },
+    "correction_rounds": {
+      "checks": [
+        "ck_correction_rounds_0"
+      ],
+      "unique": [
+        "uq_correction_rounds_0"
+      ],
+      "foreign_keys": 4
+    },
+    "correction_items": {
+      "checks": [
+        "ck_correction_items_0",
+        "ck_correction_items_1"
+      ],
+      "unique": [],
+      "foreign_keys": 2
+    },
+    "request_status_history": {
+      "checks": [],
+      "unique": [],
+      "foreign_keys": 3
+    },
+    "request_notes": {
+      "checks": [
+        "ck_request_notes_0"
+      ],
+      "unique": [],
+      "foreign_keys": 2
+    },
+    "notifications": {
+      "checks": [],
+      "unique": [
+        "uq_notifications_0"
+      ],
+      "foreign_keys": 4
+    },
+    "automation_runs": {
+      "checks": [
+        "ck_automation_runs_0",
+        "ck_automation_runs_1"
+      ],
+      "unique": [],
+      "foreign_keys": 0
+    },
+    "automation_jobs": {
+      "checks": [
+        "ck_automation_jobs_0",
+        "ck_automation_jobs_1"
+      ],
+      "unique": [
+        "idempotency_key"
+      ],
+      "foreign_keys": 4
+    },
+    "automation_attempts": {
+      "checks": [
+        "ck_automation_attempts_0"
+      ],
+      "unique": [
+        "uq_automation_attempts_0"
+      ],
+      "foreign_keys": 1
+    },
+    "request_alerts": {
+      "checks": [
+        "ck_request_alerts_0"
+      ],
+      "unique": [
+        "idempotency_key"
+      ],
+      "foreign_keys": 2
+    },
+    "daily_request_summaries": {
+      "checks": [],
+      "unique": [
+        "summary_date"
+      ],
+      "foreign_keys": 1
+    },
+    "audit_logs": {
+      "checks": [
+        "ck_audit_logs_0"
+      ],
+      "unique": [],
+      "foreign_keys": 4
+    }
+  }
+}

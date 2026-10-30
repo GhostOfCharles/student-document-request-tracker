@@ -1,0 +1,64 @@
+[
+  {
+    "timestamp": "2026-10-30T15:32:50.525364+00:00",
+    "event": "screenshot",
+    "path": "screenshots/login-desktop.png"
+  },
+  {
+    "timestamp": "2026-10-30T15:32:50.864425+00:00",
+    "event": "screenshot",
+    "path": "screenshots/login-validation.png"
+  },
+  {
+    "timestamp": "2026-10-30T15:32:51.568479+00:00",
+    "event": "login",
+    "account": "student@example.test"
+  },
+  {
+    "timestamp": "2026-10-30T15:32:51.701019+00:00",
+    "event": "screenshot",
+    "path": "screenshots/student-dashboard-desktop.png"
+  },
+  {
+    "timestamp": "2026-10-30T15:32:52.235560+00:00",
+    "event": "screenshot",
+    "path": "screenshots/service-requirements.png"
+  },
+  {
+    "timestamp": "2026-10-30T15:32:52.520475+00:00",
+    "event": "form_accessibility",
+    "snapshot": "- heading \"Document requests\" [level=2]\n- button \"Refresh current view\"\n- button \"Sign out\"\n- text: Synthetic Student One \u2022 Student\n- button \"Dashboard\"\n- button \"Services\"\n- button \"Requests\"\n- button \"Notifications\"\n- group:\n  - text: Create request Certificate of Enrollment \u2022 version 1 \u2022 3 calendar days Use synthetic information and fictional evidence only.\n  - textbox \"Purpose of request *\"\n  - text: 200 characters remaining\n  - button \"Request category *\"\n  - 'button \"Preferred date: Choose date\"'\n  - checkbox \"I confirm this is synthetic test data *\"\n  - text: Supporting evidence * PDF/JPEG/PNG, up to 5 MiB.\n  - button \"Upload Supporting evidence\"\n  - text: Fictional manual payment \u2022 PHP 50.00 Upload a fictional test receipt. No money is collected.\n  - textbox \"Fictional payment reference\"\n  - button \"Upload fictional receipt\"\n  - button \"Submit request\""
+  },
+  {
+    "timestamp": "2026-10-30T15:32:52.639485+00:00",
+    "event": "screenshot",
+    "path": "screenshots/dynamic-form-desktop.png"
+  },
+  {
+    "timestamp": "2026-10-30T15:32:54.637163+00:00",
+    "event": "private_upload",
+    "file_id": 11,
+    "filename": "browser-synthetic.png"
+  },
+  {
+    "timestamp": "2026-10-30T15:32:55.451517+00:00",
+    "event": "private_upload",
+    "file_id": 12,
+    "filename": "browser-synthetic.png"
+  },
+  {
+    "timestamp": "2026-10-30T15:32:55.552279+00:00",
+    "event": "screenshot",
+    "path": "screenshots/filled-submission-form.png"
+  },
+  {
+    "timestamp": "2026-10-30T15:32:55.569604+00:00",
+    "event": "filled_form",
+    "snapshot": "- heading \"Document requests\" [level=2]\n- button \"Refresh current view\"\n- button \"Sign out\"\n- text: Synthetic Student One \u2022 Student\n- button \"Dashboard\"\n- button \"Services\"\n- button \"Requests\"\n- button \"Notifications\"\n- group:\n  - text: Create request Certificate of Enrollment \u2022 version 1 \u2022 3 calendar days Use synthetic information and fictional evidence only.\n  - textbox \"Purpose of request *\"\n  - text: 171 characters remaining\n  - button \"Request category * Scholarship\"\n  - 'button \"Preferred date: Choose date\"'\n  - checkbox \"I confirm this is synthetic test data *\" [checked]\n  - text: Supporting evidence * PDF/JPEG/PNG, up to 5 MiB.\n  - button \"Replace browser-synthetic.png\"\n  - text: Fictional manual payment \u2022 PHP 50.00 Upload a fictional test receipt. No money is collected.\n  - textbox \"Fictional payment reference\"\n  - button \"Replace browser-synthetic.png\"\n  - button \"Submit request\""
+  },
+  {
+    "timestamp": "2026-10-30T15:32:55.658431+00:00",
+    "event": "submission_prompt",
+    "snapshot": "- text: Enter the test reference.\n- heading \"Document requests\" [level=2]\n- button \"Refresh current view\"\n- button \"Sign out\"\n- text: Synthetic Student One \u2022 Student\n- button \"Dashboard\"\n- button \"Services\"\n- button \"Requests\"\n- button \"Notifications\"\n- group:\n  - text: Create request Certificate of Enrollment \u2022 version 1 \u2022 3 calendar days Use synthetic information and fictional evidence only.\n  - textbox \"Purpose of request *\"\n  - text: 171 characters remaining\n  - button \"Request category * Scholarship\"\n  - 'button \"Preferred date: Choose date\"'\n  - checkbox \"I confirm this is synthetic test data *\" [checked]\n  - text: Supporting evidence * PDF/JPEG/PNG, up to 5 MiB.\n  - button \"Replace browser-synthetic.png\"\n  - text: Fictional manual payment \u2022 PHP 50.00 Upload a fictional test receipt. No money is collected.\n  - textbox \"Fictional payment reference\" [invalid]\n  - text: Enter the test reference.\n  - button \"Replace browser-synthetic.png\"\n  - button \"Submit request\""
+  }
+]

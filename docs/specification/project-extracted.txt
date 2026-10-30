@@ -1,0 +1,1950 @@
+Student Document Request Tracker
+System Design and Development Documentation
+Version 1.0  |  30 October 2026
+Flutter Web  |  FastAPI  |  MySQL
+Purpose and implementation baseline
+This documentation defines the Student Document Request Tracker for students and registrar staff. It specifies the complete application scope, 25 planned screens, the versioned data model, API contracts, workflow controls, private evidence handling, automation and the development plan for Weeks 13 through 18.
+The implementation baseline uses two roles, Student and Registrar Staff. Service management is an additional staff permission. Requests retain the service requirements in force at submission, corrections preserve earlier evidence, and every status change is validated by FastAPI. Week 13 prioritizes a working request lifecycle and demonstrable automation before the remaining interface refinements.
+This is a design and implementation specification. Acceptance depends on executable migrations, integration tests and recorded demonstrations; the document does not certify a completed application.
+Scope at a glance
+[TABLE]
+Area | Baseline
+Application | 3 authentication screens, 11 student screens and 11 staff screens; 10 supporting dialogs and 10 shared system states
+Database | 23 core MySQL tables and one conditional password recovery table
+Evidence | Private image and PDF uploads, immutable submitted revisions and manual payment evidence review
+Automation | Persistent notification jobs, aging alerts, escalation, daily summaries, bounded retries and manual recovery
+Delivery | Local Week 13 demonstration followed by refinement, testing, deployment evaluation and final handover
+[/TABLE]
+
+Release boundaries
+Password recovery A03 remains conditional until a verified recovery channel is implemented. Saved student drafts, real SMS or email delivery, payment processing, certificate generation, staff assignment, messaging, appeals and a separate administrator portal are excluded from the initial release. The planned A03 screen remains part of the 25 screen inventory without implying an active reset endpoint.
+Contents
+01    Scope and system architecture3
+02    User interface and wireframe specifications4
+03    Workflow and status transition rules14
+04    Roles and permissions16
+05    Database definitions19
+06    API contract and examples44
+07    Dynamic requirement configuration57
+08    File upload and storage rules59
+09    Automation and failure recovery61
+10    Verification and acceptance64
+11    Week 13 through Week 18 delivery plan66
+12    GitHub and development workflow69
+13    Deployment and operational handover71
+14    Consistency and traceability register72
+15    Technical references73
+Use the Word navigation pane to move between chapters and detailed specifications. Screen IDs, table names and API paths are stable cross references throughout this document.
+1 Scope and system architecture
+Objectives and actors
+Students select a document service, submit the required information and evidence, respond to correction instructions, track progress and acknowledge receipt. Registrar staff review requests, verify payment evidence where required, prepare documents, confirm physical release and monitor operational alerts. Staff with can_manage_services may configure and publish document services.
+Selected technology stack
+[TABLE]
+Component | Responsibility
+Flutter Web and Dart | Responsive browser interface, navigation, dynamic form widgets and authenticated API client
+FastAPI and Pydantic | Authentication, authorization, validation, workflow transactions and OpenAPI contracts
+MySQL with InnoDB | Relational records, constraints, durable job state and reporting snapshots
+SQLAlchemy and PyMySQL | Database models, transactions and the MySQL connection driver
+Alembic | Ordered and repeatable schema migrations
+APScheduler 3.x | Time based triggers in one dedicated scheduler process
+Private file storage | Evidence bytes stored outside public assets with database metadata
+GitHub | Source control, reviewed changes and weekly assessment evidence
+[/TABLE]
+
+Component and transaction flow
+Browser running Flutter Web
+  | HTTPS and session cookie
+Reverse proxy
+  | /api/v1 -> FastAPI -> SQLAlchemy -> MySQL
+  | static routes -> Flutter release build
+FastAPI -> private evidence storage
+Dedicated scheduler and worker -> MySQL automation jobs
+Worker -> notifications and monitoring records
+
+The HTTP application and the scheduler are separate processes. API transactions write business changes and durable automation jobs together. The worker consumes committed jobs and records attempts. File downloads pass through an authorized FastAPI route. MySQL and the private evidence directory are never exposed as public web resources.
+Data ownership and historical integrity
+Student ownership is derived from the authenticated session. Staff access is limited to the registrar workflow; there is no assignment subsystem. Published service versions and submitted revisions are immutable. Account and service deactivation preserve history. Ordinary operations do not physically delete historical requests or their evidence.
+Operational time and money
+All stored timestamps use UTC DATETIME(6) and all API timestamps use ISO 8601 UTC. The browser displays Asia/Manila time. Daily reporting dates and the 17:00 summary schedule use Asia/Manila. Processing estimates use calendar days. Payment amounts use DECIMAL(10,2) in MySQL and decimal strings in JSON; the initial currency is PHP.
+2 User interface and wireframe specifications
+The full interface comprises 25 main screens. The 10 dialogs and 10 shared states are reusable components within those screens. Responsive layouts retain the same permissions and workflow restrictions at every viewport size.
+A01 Login Page
+Purpose: Allow registered students and authorized registrar staff to access the system.
+System logo and name
+Email address or Student ID field
+Password field
+Show or Hide Password button
+Remember Me option
+Login button
+Forgot Password link
+Create Student Account link
+Behavior: After successful authentication, the backend checks the user's role and redirects them to the appropriate dashboard. Invalid credentials display an error. Staff accounts are created through an authorized setup process, not public registration.
+Integration rule: a must_change_password response routes the user to the password change section before protected business operations are enabled. Hide the recovery link while A03 is disabled.
+A02 Student Registration Page
+Purpose: Allow new students to create an account.
+Full Name
+Student ID Number
+Email Address
+Password
+Confirm Password
+Show Password option
+Terms and Conditions checkbox
+Create Account button
+Already Have an Account? Login link
+Behavior: Validates all fields and checks for duplicate Student IDs or email addresses. Successful registration creates a student account. Email verification is not included in the initial scope.
+A03 Forgot   Reset Password Page
+Purpose: Allow users to recover access to their accounts.
+Email address field
+Request Password Reset button
+Reset instructions or confirmation
+New Password and Confirm Password fields when a valid reset is authorized
+Back to Login link
+Behavior: The reset method must be secure and verified by the backend. This screen is conditional and disabled in the initial release. A verified recovery channel and one time tokens are required before activation.
+S01 Student Dashboard
+Purpose: The student's main screen after logging in.
+Header with search bar, notification icon, and profile menu
+Welcome banner displaying the student's name
+Request a Document button
+Summary cards for Active Requests, Under Review, Needs Correction, Ready for Release, and Completed
+Available Document Services section showing service cards
+View Requirements and Request Now buttons on each service card
+My Recent Requests table with Request ID, Document, Date, Status, and Track button
+Recent Notifications panel with View All
+Before You Submit information panel
+Behavior: All dashboard data comes from the logged in student's records. Active Requests is an aggregate count, so it may overlap with other cards rather than being added to them.
+S02 Document Services Page
+Purpose: Display all active document services students can request.
+Search Documents field
+Service category filters, if applicable
+Document service cards or list
+Document name and description
+Number of requirements
+Estimated processing time, when configured
+Payment Required indicator, if applicable
+View Requirements button
+Request Now button
+Behavior: Only active and available services are shown. Students can search and select services configured by authorized staff.
+S03 Document Service Details   Requirements Page
+Purpose: Explain everything needed before requesting a document.
+Document name and description
+Eligibility conditions, if any
+Estimated processing time
+List of required and optional information
+Accepted attachment types and size limits
+Payment Required indicator
+Payment amount and instructions, if applicable
+Payment reference and receipt requirements, if applicable
+Request Now button
+Back to Services button
+Behavior: Requirements come from the service configuration stored in the backend. Payment details describe evidence requirements; controlled test evidence is used for demonstrations.
+S04 Create Document Request Page
+Purpose: Allow students to complete and submit a document request.
+Selected document name
+Dynamic input fields based on service requirements
+Required and optional labels
+Text, dropdown, date, and other supported fields
+File upload controls for images or PDFs
+Attachment previews and Remove/Replace controls
+Payment reference field when required
+Payment receipt upload when required
+Form validation messages
+Review Request section
+Submit Request button
+Cancel / Back button
+Behavior: Submission is blocked until mandatory requirements are complete and valid. The backend validates the request again, securely stores the evidence, creates a request ID, and records the initial status. Save Draft can be added later if time permits.
+S05 Request Submission Confirmation Page
+Purpose: Confirm that the request was successfully submitted.
+Success icon and confirmation message
+Generated Request ID
+Document name
+Date and time submitted
+Initial request status
+View Request button
+Back to Dashboard button
+Request Another Document button
+Behavior: Appears only after the backend confirms that the submission succeeded. It must not display a false success when the network or server fails.
+S06 My Requests Page
+Purpose: Display and organize the student's request history.
+Search requests field
+Status filters for All, Submitted, Under Review, Needs Correction, Processing, Ready for Release, Released, Completed, Rejected, and Cancelled
+Request ID
+Document name
+Date submitted
+Current status
+View Details / Track button
+Request Another Document button
+Empty state when no requests exist
+Behavior: Students can access only their own requests. Filters change the visible records without modifying their statuses.
+S07 Request Details and Tracking Page
+Purpose: Show the full progress of a selected document request.
+Request ID and document information
+Submission date
+Current status
+Progress timeline or status history
+Submitted field values
+Uploaded requirements with authorized View File controls
+Staff notes and correction instructions
+Payment verification status when applicable
+Cancel Request button when permitted
+Correct Requirements button when applicable
+Acknowledge Receipt button when applicable
+Start New Request shortcut when rejected
+Back to My Requests button
+Behavior: Cancellation is permitted only before processing under the transition policy. Rejected and cancelled requests remain in the history. Receipt acknowledgement becomes available only after staff records the document as released.
+S08 Correct and Resubmit Requirements Page
+Purpose: Let students fix requests returned by registrar staff.
+Document name and Request ID
+Staff's correction instructions
+List of requirements needing correction
+Previously submitted evidence
+Replace / Upload New File controls
+Editable fields identified for correction
+Validation messages
+Resubmit Requirements button
+Back to Request Details button
+Behavior: Only requests marked Needs Correction can use this process. A successful resubmission returns the request to Under Review and notifies staff.
+S09 Student Notifications Page
+Purpose: Display updates about the student's requests and available services.
+All, Unread, and Read filters
+Notification list
+Notification title, message, timestamp, and read indicator
+Request ID or related service when applicable
+View Related Request button
+Mark as Read button
+Mark All as Read button
+Empty notification state
+Behavior: Notifications can be generated by request submission, status changes, corrections, release availability, completion, and service announcements. Notifications are delivered in app.
+S10 Student Profile and Account Settings
+Purpose: Allow students to view their account and manage permitted details.
+Profile picture or default avatar
+Full name
+Student ID
+Email address
+Contact information when applicable
+Edit Profile button
+Change Password section
+Save Changes button
+Behavior: Students may edit allowed contact information, but sensitive identity fields such as Student ID must not be freely changeable.
+Initial profile presentation uses a default avatar. Avatar uploads are outside the evidence upload API. Full name and student number are read only; email and phone number are the permitted editable contact fields.
+S11 Student Help and Support Page
+Purpose: Explain how to use the document request system.
+Search Help field, optional
+How to Request a Document
+How to Upload Requirements
+Accepted File Types
+Request Status Explanations
+Payment Evidence Instructions
+How to Correct a Request
+How to Cancel a Request
+How to Claim a Document
+Contact Support information
+Behavior: Primarily informational. A separate messaging or support ticket system is not necessary.
+Support directs users to the registrar office for document concerns and the designated project maintainer for technical concerns. Help content is maintained with the frontend; no support ticket API is required.
+T01 Registrar Staff Dashboard
+Purpose: Give staff an overview of document requests and service activity.
+Search requests, students, or document services
+Notification icon and profile menu
+Welcome banner
+Add New Document Service button, if authorized
+View Pending Requests button
+Summary cards: Pending Review, Needs Correction, Processing, Ready for Release, Completed Today
+Recent Student Requests table
+Recent Notifications panel
+Manage Document Services preview
+Quick Actions
+Today's Activity summary
+Behavior: Shows authorized staff an overview of requests and actions needing attention. Counts and table values must be generated from actual records.
+T02 Student Requests Management Page
+Purpose: Allow staff to search, filter, and manage submitted document requests.
+Search by Request ID or student
+Document type filter
+Status filter
+Date filter
+Aging / Escalation indicator
+Requests table showing Request ID, Student, Document, Submission Date, Status, and Action
+Review button
+Pagination or Load More when necessary
+Empty search results state
+Behavior: Staff select a request for review. The system prevents unauthorized staff from performing restricted operations.
+T03 Student Request Review and Details Page
+Purpose: Allow authorized staff to review evidence and process a student's request.
+Request ID
+Student information
+Document type
+Submission date
+Current status
+Submitted fields and values
+Uploaded attachment list with secure previews
+Payment reference and receipt evidence, if applicable
+Payment verification status
+Approve Requirements button
+Request Correction button
+Reject Request button
+Update Status button
+Mark Ready for Release action
+Confirm Release action
+Staff notes
+Request history and audit trail
+Behavior: Staff can approve validated requirements, return a request for correction, reject it with a reason, and advance it through valid statuses. The interface must not allow arbitrary or contradictory status changes.
+T04 Manage Document Services Page
+Purpose: Manage document services available to students.
+Search Document Services
+Active / Inactive filters
+Add New Document Service button
+Services table or cards
+Service name
+Description
+Number of requirements
+Payment Required indicator
+Current availability status
+Edit Service button
+Edit Requirements button
+Preview Service button
+Activate / Deactivate action
+Behavior: Authorized staff can add, edit, and deactivate services. Deactivating a service prevents new requests but does not delete historical ones.
+T05 Add   Edit Document Service Page
+Purpose: Allow authorized staff to create and configure document services without editing application code.
+Document Service Name
+Description
+Estimated Processing Time
+Eligibility or usage instructions
+Active / Inactive status
+Payment Required toggle
+Payment Amount and Payment Instructions when applicable
+Dynamic Requirement Builder
+Add Requirement button
+Requirement name and instructions
+Input type selector: Text, Dropdown, Date, Image/PDF Upload, Checkbox
+Required / Optional toggle
+Allowed file types and size limits for uploads
+Remove Requirement control
+Reorder Requirements control, if included
+Preview Service button
+Save Draft / Publish or Save Changes button
+Cancel button
+Behavior: The backend stores the configuration and validates it. Changes to requirements apply to future submissions and do not retroactively alter evidence already submitted under an older version.
+T06 Document Service Preview Page
+Purpose: Let staff see how their configured document service appears to students.
+Service name and description
+Estimated processing time
+Payment information, if applicable
+Generated student form preview
+Required and optional fields
+Disabled upload controls
+Validation indicators
+Back to Edit button
+Publish / Save button
+Behavior: Preview mode does not create a real student request or process a payment.
+T07 Staff Notifications Page
+Purpose: Show important request events and operational alerts.
+All, Unread, and Read filters
+New document request notifications
+Corrected request notifications
+Aging request alerts
+Escalation alerts
+Automation failure notifications
+Related Request ID
+Timestamp
+View Related Request button
+Mark as Read and Mark All as Read controls
+Behavior: Notifications reflect real backend events and are limited to information the staff account is authorized to access.
+T08 Activity Logs Page
+Purpose: Record important staff and system actions.
+Search logs field
+Date range filter
+User or actor filter
+Event type filter
+Request ID filter
+Event timestamp
+Action performed
+Previous and new status
+Operation result
+View Event Details action
+Behavior: Displays an auditable record of actions such as approvals, corrections, status changes, service configuration changes, and automation failures. Logs must not expose passwords, tokens, or private files unnecessarily.
+T09 Daily Summary and Automation Monitoring Page
+Purpose: Display daily request summaries and monitor required automation.
+Date selector
+Pending, Processing, Ready for Release, and Completed counts
+Aging requests
+Escalated requests
+Daily pending request summary
+Generate / View Summary button
+Automated job status
+Last execution time
+Successful and failed notification attempts
+Retry count and retry status
+Permanent failure list
+View Logs button
+Authorized Manual Recovery / Retry action where safe
+Behavior: Scheduled jobs generate real summaries and alerts. Failed operations follow bounded retry rules, and permanent failures are recorded for staff intervention. T09 provides the Week 13 automation evidence.
+T10 Staff Profile and Account Settings
+Purpose: Allow staff to view their account information and permitted settings.
+Full name
+Staff email
+Staff identifier, if used
+Contact information
+Assigned permissions display
+Edit permitted contact details
+Change Password section
+Save Changes button
+Behavior: Staff can view their permissions but cannot grant themselves additional privileges through this screen.
+Permissions and staff identifiers are read only. Staff may update their own email and phone number. Provisioning and permission changes occur through an operator controlled setup command.
+T11 Staff Help and Support Page
+Purpose: Provide instructions for managing document services and processing requests.
+Request Processing Guide
+How to Review Requirements
+How to Verify Payment Evidence
+How to Request Corrections
+Request Status Definitions
+How to Add / Edit Document Services
+How to Generate Daily Summaries
+Automation Failure and Recovery Guide
+Contact Technical Support information
+Behavior: Provides procedural help without introducing another messaging or ticket management system.
+Support directs users to the registrar office for document concerns and the designated project maintainer for technical concerns. Help content is maintained with the frontend; no support ticket API is required.
+Supporting dialogs
+[TABLE]
+ID | Dialog | Purpose and controls
+D01 | Cancel Request Confirmation | Shows the request ID and cancellation warning, with Confirm Cancel and Go Back
+D02 | Reject Request | Requires staff to provide a rejection reason and confirm the decision
+D03 | Request Correction | Staff selects affected requirements, enters instructions, and submits the correction request
+D04 | Approve Requirements | Confirms evidence review and advances the request to Processing
+D05 | Update Request Status | Displays only valid next statuses, allows remarks, and confirms the change
+D06 | Release Confirmation | Staff confirms the document was actually released
+D07 | Receipt Acknowledgement | Student confirms receiving the released document
+D08 | File Preview / Replace | Displays an authorized attachment and allows replacement or removal where permitted
+D09 | Activate / Deactivate Service | Confirms service availability changes
+D10 | Unsaved Changes / Logout | Warns about unsaved changes or confirms logout
+[/TABLE]
+
+Shared system states
+[TABLE]
+State | Where it appears | Expected behavior
+Loading | Dashboards, tables, forms | Show progress indicator while data is being retrieved or submitted
+Empty | Requests, services, notifications | Explain that no records exist and provide a relevant next action
+Validation Error | Registration, request forms, service editor | Explain which field is invalid or missing
+Network Error | All API dependent screens | Show failure message and Retry option where appropriate
+Server Error | API operations | Show a safe error message without exposing internal diagnostics
+Session Expired | Authenticated screens | Return to Login and explain the session expired
+Access Denied | Restricted staff and student routes | Explain lack of permission and provide Return to Dashboard
+Not Found | Invalid request or route | Show a neutral message and a safe navigation option
+Upload Failure | Request form and corrections | Preserve valid entered information and allow a safe retry
+Automation Failure | Staff monitoring | Show the affected job, status, and authorized recovery options
+[/TABLE]
+
+Navigation
+Authentication: Login -> Student Dashboard or Staff Dashboard; Student Registration -> Login. Password recovery appears only when enabled.
+Student: Dashboard -> Services -> Requirements -> Create Request -> Confirmation -> My Requests -> Tracking. Tracking exposes corrections, cancellation or acknowledgement only in valid states.
+Staff: Dashboard -> Queue -> Review -> permitted workflow action. Service managers use Services -> Draft Editor -> Preview -> Publish. Monitoring links to summaries, attempts, sanitized logs and safe recovery.
+Global search uses existing endpoints according to the current screen: services by name or category, requests by tracking number or student, and audit logs by event filters. It does not introduce a public student directory. Mobile layouts replace wide tables with accessible record cards or horizontal scrolling while keeping action names and validation messages visible.
+3 Workflow and status transition rules
+Canonical status vocabulary
+[TABLE]
+Database status | User facing label | Meaning
+draft | Draft | Optional unsent request
+submitted | Submitted | Backend has accepted the submission
+under_review | Under Review | Staff has begun checking the requirements
+needs_correction | Needs Correction | Student must fix identified problems
+processing | Processing | Requirements have been accepted
+ready_for_release | Ready for Release | Requested document is prepared
+released | Released | Staff recorded document handover
+completed | Completed | Student acknowledged receipt
+rejected | Rejected | Request was denied
+cancelled | Cancelled | Student cancelled an eligible request
+[/TABLE]
+
+The canonical visible label for submitted is Submitted. Pending Review is a staff dashboard aggregate label for submitted requests; it is not another database status. The optional draft status is reserved and has no initial release endpoint.
+Permitted transitions
+[TABLE]
+From | To | Actor | Required conditions
+New submission | Submitted | Student | Active service, current published version, valid complete requirements
+Draft | Submitted | Student | Draft saving is implemented and all submission validation passes
+Submitted | Under Review | Staff | Request is still submitted; no conflicting operation
+Submitted | Cancelled | Student owner | Request has not entered staff processing
+Under Review | Needs Correction | Staff | At least one specific correction issue and instructions
+Under Review | Processing | Staff | Required evidence is valid; payment verified if applicable
+Under Review | Rejected | Staff | Nonempty rejection reason
+Under Review | Cancelled | Student owner | Cancellation occurs before another valid staff transition
+Needs Correction | Under Review | Student owner | New complete revision passes validation and addresses requested corrections
+Processing | Ready for Release | Staff | Staff confirms document preparation is complete
+Ready for Release | Released | Staff | Staff confirms actual handover
+Released | Completed | Student owner | Student explicitly acknowledges receipt
+[/TABLE]
+
+Completed, Rejected and Cancelled are terminal. There is no reopen endpoint. Cancellation is permitted only from Submitted or Under Review. It is unavailable in Needs Correction and all subsequent states. Rejection is allowed only while Under Review.
+Action validation and atomicity
+Submission validates an active service and its current published version, creates the request number and revision 1, writes history and audit records, and queues notification jobs in one transaction. No finalized request is created after validation failure.
+Starting review requires Submitted. Requesting correction requires Under Review, meaningful instructions and at least one correction item belonging to the original service version. A request has at most one unresolved correction round.
+Resubmission requires Needs Correction, the open correction round, the expected row version and a complete valid revision. Only identified fields or payment elements may change; unchanged values and file references are copied into the new immutable revision. The backend validates every listed correction and closes the round. Staff still judge the substantive quality of replacement evidence during review.
+Approval requires Under Review, valid current requirements and no unresolved correction round. When payment is required, the latest payment review for the current revision must be verified. Approval advances directly to Processing and does not imply release.
+Ready for Release requires Processing and staff confirmation that preparation is complete. Release requires Ready for Release and confirmation of actual handover. Only the student owner may acknowledge a Released request, which records Completed.
+Each status action checks expected_row_version, validates current state, updates document_requests, increments row_version, appends status history and audit entries, and queues durable notifications in one database transaction. A stale value returns 409 VERSION_CONFLICT; the client reloads before presenting another action.
+Timestamp rules
+Set submitted_at and last_progress_at at first submission. Compute due_at as submitted_at plus processing_days calendar days. Beginning review, correction issue, correction receipt, approval, readiness and release update last_progress_at; opening a page or adding a note does not. Set released_at and released_by_user_id at handover, acknowledged_at at student acknowledgement, and closed_at for Completed, Rejected or Cancelled. Initial row_version is 1.
+While Needs Correction is active, suspend staff delay alerts. On resubmission, extend due_at by resolved_at minus issued_at for that correction round. This calculation occurs once in the resubmission transaction. If a previous aging alert was open, resolve it on entering Needs Correction; a later overdue episode may create a new alert.
+4 Roles and permissions
+S means Student, R means Registrar Staff and M means staff with can_manage_services=true. M is a permission category, not a third stored role. Own means the authenticated user is the record owner or notification recipient. Yes for R or M is limited to authorized registrar operations.
+Accounts and profiles
+[TABLE]
+Operation | S | R | M
+Register as student | Public | No | No
+Log in | Yes | Yes | Yes
+View own profile | Own | Own | Own
+Edit permitted profile fields | Own | Own | Own
+Change own password | Own | Own | Own
+View own notifications | Own | Own | Own
+Mark own notifications as read | Own | Own | Own
+Log out | Yes | Yes | Yes
+Create staff accounts through the web UI | No | No | No
+Change roles or grant permissions | No | No | No
+[/TABLE]
+
+Document services
+[TABLE]
+Operation | S | R | M
+View active document services | Yes | Yes | Yes
+View service requirements | Yes | Yes | Yes
+View inactive services | No | Yes | Yes
+View service version history | No | Yes | Yes
+Create a document service | No | No | Yes
+Edit a draft service | No | No | Yes
+Add or remove requirements in a draft | No | No | Yes
+Configure payment instructions | No | No | Yes
+Preview a draft | No | No | Yes
+Publish a service version | No | No | Yes
+Activate or deactivate a service | No | No | Yes
+Delete historical submitted requirements | No | No | No
+[/TABLE]
+
+Requests and evidence
+[TABLE]
+Operation | S | R | M
+Create a document request | Yes | No | No
+View request list | Own | Yes | Yes
+View request details | Own | Yes | Yes
+View submitted attachments | Own | Yes | Yes
+View status timeline | Own | Yes | Yes
+Upload and replace requirements during permitted submission stages | Own | No | No
+Correct and resubmit requirements | Own | No | No
+Cancel eligible request | Own | No | No
+Start reviewing a request | No | Yes | Yes
+Verify payment evidence | No | Yes | Yes
+Request corrections | No | Yes | Yes
+Approve requirements | No | Yes | Yes
+Reject request | No | Yes | Yes
+Mark ready for release | No | Yes | Yes
+Confirm document release | No | Yes | Yes
+Acknowledge receipt | Own | No | No
+View student visible notes | Own | Yes | Yes
+View internal staff notes | No | Yes | Yes
+Add staff notes | No | Yes | Yes
+[/TABLE]
+
+Automation and monitoring
+[TABLE]
+Operation | S | R | M
+View own request notifications | Yes | No | No
+View registrar notifications | No | Yes | Yes
+View aging and escalation alerts | No | Yes | Yes
+View daily pending summaries | No | Yes | Yes
+View sanitized activity logs | No | Yes | Yes
+View automation runs and failures | No | Yes | Yes
+Generate daily summary manually | No | Yes | Yes
+Retry supported failed automation task | No | Yes | Yes
+Record manual failure resolution | No | Yes | Yes
+Modify arbitrary scheduled code or scripts | No | No | No
+[/TABLE]
+
+Enforcement rules
+Every route authorizes the actor before returning protected data. Student access to another owner's request or file returns 404 RESOURCE_NOT_FOUND. Role restrictions return 403 PERMISSION_DENIED. Expired, revoked or inactive sessions return 401 AUTHENTICATION_REQUIRED. Student response models omit staff_only notes, internal_remarks, audit details and private storage metadata.
+Ordinary staff may view version history and published configurations but cannot read or preview an editable draft through the manager routes. No web endpoint changes roles, grants service permissions or creates staff accounts. No user may edit submitted historical evidence or rewrite audit history.
+5 Database definitions
+Schema conventions
+Use MySQL 8.0.16 or later with InnoDB, utf8mb4 and foreign key enforcement. Every id is BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY. Foreign key integer types match the referenced key. Columns are NOT NULL unless marked nullable. All timestamps are UTC DATETIME(6). No implicit database defaults are assumed unless stated; the application supplies required values in the same transaction.
+Use ON DELETE RESTRICT and ON UPDATE RESTRICT for historical relationships. Draft child rows may be explicitly removed before publication; historical rows are retained. Controlled string values are enforced by validation and CHECK constraints where they concern a single row. Multi-table ownership and version membership are validated transactionally.
+Initial defaults: users.can_manage_services=false, users.is_active=true, users.must_change_password=false for self registration, auth_sessions.remember_me=false, document_services.is_active=false until activation, document_requests.row_version=1 and current_revision_number=1, automation_jobs.attempt_count=0 and max_attempts=3. Count fields begin at zero; created_at and updated_at are supplied in UTC. Staff provisioning sets must_change_password=true.
+Core table inventory
+[TABLE]
+Area | Tables
+Accounts | users, auth_sessions
+Services | document_services, document_service_versions, service_requirements, requirement_options
+Requests and files | document_requests, request_revisions, request_field_values, stored_files, request_attachments
+Review and tracking | payment_reviews, correction_rounds, correction_items, request_status_history, request_notes
+Notifications and automation | notifications, automation_runs, automation_jobs, automation_attempts, request_alerts, daily_request_summaries
+Audit | audit_logs
+Conditional recovery | password_reset_tokens
+[/TABLE]
+
+5 01 users
+Stores both student and registrar staff accounts.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Internal user identifier
+role | VARCHAR(20) | student or staff
+student_number | VARCHAR(50), nullable, UNIQUE | Student ID
+staff_number | VARCHAR(50), nullable, UNIQUE | Staff identifier, if assigned
+full_name | VARCHAR(150) | User's name
+email | VARCHAR(254), UNIQUE | Normalized login email
+password_hash | VARCHAR(255) | Secure password hash
+phone_number | VARCHAR(30), nullable | Optional contact information
+can_manage_services | BOOLEAN | Permission to manage document services
+is_active | BOOLEAN | Whether the account can access the system
+must_change_password | BOOLEAN | Forces replacement of a temporary staff password
+last_login_at | DATETIME(6), nullable | Most recent successful login
+created_at | DATETIME(6) | Account creation
+updated_at | DATETIME(6) | Last account update
+[/TABLE]
+
+Integrity and behavior
+CHECK role IN (student, staff); students require student_number; can_manage_services is true only for staff.
+Normalize email before comparison; enforce unique email, student_number and staff_number. Public registration always creates a student.
+5 02 auth_sessions
+Tracks authenticated browser sessions.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Session identifier
+user_id | BIGINT UNSIGNED, FK -> users.id | Session owner
+session_token_hash | BINARY(32), UNIQUE | Hash of the random session token
+remember_me | BOOLEAN | Indicates whether extended expiry was selected
+created_at | DATETIME(6) | Login time
+expires_at | DATETIME(6) | Session expiration
+last_seen_at | DATETIME(6), nullable | Last authenticated activity
+revoked_at | DATETIME(6), nullable | Logout or administrative invalidation
+[/TABLE]
+
+Integrity and behavior
+Generate a cryptographically random token, store SHA-256 only and transmit the token solely in the protected session cookie.
+Reject expired, revoked or inactive-user sessions. Logout revokes the current session. Password change revokes all sessions.
+5 03 document_services
+Represents the stable identity of a document service, independently of changes to its requirements.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Service identifier
+service_code | VARCHAR(50), UNIQUE | Stable internal service code
+is_active | BOOLEAN | Whether students can make new requests
+current_version_id | BIGINT UNSIGNED, nullable, FK -> document_service_versions.id | Currently published configuration
+created_by_user_id | BIGINT UNSIGNED, FK -> users.id | Staff creator
+created_at | DATETIME(6) | Creation timestamp
+updated_at | DATETIME(6) | Last update
+[/TABLE]
+
+Integrity and behavior
+The current version must belong to this service and have published status. Publishing and changing the current pointer are atomic.
+Deactivation prevents new submissions; it does not block historical review, corrections or release.
+5 04 document_service_versions
+Stores different versions of each service's configuration.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Version identifier
+service_id | BIGINT UNSIGNED, FK -> document_services.id | Parent service
+version_number | INT UNSIGNED | Sequential service version
+name | VARCHAR(150) | Document name in this version
+description | TEXT, nullable | Document description
+category | VARCHAR(80), nullable | Optional grouping or filter
+eligibility_instructions | TEXT, nullable | Eligibility information
+processing_days | SMALLINT UNSIGNED | Estimated processing time in calendar days
+payment_required | BOOLEAN | Whether payment evidence is needed
+payment_amount | DECIMAL(10,2), nullable | Configured amount
+currency_code | CHAR(3) | Currency, initially PHP
+payment_instructions | TEXT, nullable | Instructions displayed to students
+payment_reference_required | BOOLEAN | Whether reference number is required
+payment_receipt_required | BOOLEAN | Whether receipt upload is required
+version_status | VARCHAR(20) | draft or published
+created_by_user_id | BIGINT UNSIGNED, FK -> users.id | Staff creator
+created_at | DATETIME(6) | Creation time
+published_at | DATETIME(6), nullable | Publication time
+row_version | INT UNSIGNED | Draft optimistic concurrency counter, initially 1
+[/TABLE]
+
+Integrity and behavior
+UNIQUE(service_id, version_number). Maintain at most one editable draft per service by locking the service row when creating it.
+Published versions and their requirement rows are immutable. Use row_version to reject concurrent draft saves or publication.
+processing_days is 1-30; payment_amount must be positive when payment_required=true. When false, amount is null and payment flags are false.
+5 05 service_requirements
+Stores individual dynamic form fields for a specific service version.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Requirement identifier
+service_version_id | BIGINT UNSIGNED, FK -> document_service_versions.id | Parent version
+field_key | VARCHAR(80) | Stable key within this version
+label | VARCHAR(150) | Display name
+help_text | TEXT, nullable | Instructions for the student
+field_type | VARCHAR(20) | text, select, date, checkbox, file
+is_required | BOOLEAN | Mandatory or optional
+sort_order | INT UNSIGNED | Display order
+min_length | INT UNSIGNED, nullable | Minimum text length
+max_length | INT UNSIGNED, nullable | Maximum text length
+allowed_mime_types | JSON, nullable | Accepted file MIME types
+max_file_size_bytes | BIGINT UNSIGNED, nullable | Maximum individual file size
+created_at | DATETIME(6) | Creation time
+[/TABLE]
+
+Integrity and behavior
+UNIQUE(service_version_id, field_key) and UNIQUE(service_version_id, sort_order).
+field_type is text, select, date, checkbox or file. Type-specific settings cannot conflict. File fields accept one file each.
+5 06 requirement_options
+Stores the choices displayed in dropdown fields.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Option identifier
+requirement_id | BIGINT UNSIGNED, FK -> service_requirements.id | Parent dropdown field
+option_value | VARCHAR(100) | Stored answer value
+option_label | VARCHAR(150) | Label displayed to students
+sort_order | INT UNSIGNED | Choice ordering
+[/TABLE]
+
+Integrity and behavior
+UNIQUE(requirement_id, option_value); dropdown options exist only for select requirements.
+A selected option must belong to its requirement. Published choices cannot be edited or deleted.
+5 07 document_requests
+This is the main record for every student document request.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Internal request identifier
+request_number | VARCHAR(40), UNIQUE | Student visible tracking number
+student_user_id | BIGINT UNSIGNED, FK -> users.id | Request owner
+service_id | BIGINT UNSIGNED, FK -> document_services.id | Requested service
+service_version_id | BIGINT UNSIGNED, FK -> document_service_versions.id | Requirements applicable to the request
+status | VARCHAR(32) | Current request status
+current_revision_number | INT UNSIGNED | Latest submitted or saved revision number
+row_version | INT UNSIGNED | Optimistic concurrency control
+submitted_at | DATETIME(6), nullable | First successful submission
+due_at | DATETIME(6), nullable | Estimated completion target
+last_progress_at | DATETIME(6), nullable | Latest meaningful workflow progress
+released_at | DATETIME(6), nullable | Confirmed release
+released_by_user_id | BIGINT UNSIGNED, nullable, FK -> users.id | Staff who confirmed release
+acknowledged_at | DATETIME(6), nullable | Student receipt acknowledgement
+closed_at | DATETIME(6), nullable | Completion, rejection, or cancellation
+created_at | DATETIME(6) | Record creation
+updated_at | DATETIME(6) | Last modification
+client_submission_key | VARCHAR(64), nullable, UNIQUE | Required UUID for submitted requests; null only for optional drafts
+submission_payload_hash | BINARY(32), nullable | Canonical initial submission hash for retry comparison
+[/TABLE]
+
+Integrity and behavior
+UNIQUE(request_number) and UNIQUE(client_submission_key). The student and pinned service version never change after submission.
+The pinned version must belong to service_id. Request numbers are server generated using the persisted ID and submission year.
+Store canonical initial payload hash; the same owner, key and payload replay the original result. Different payload reuse returns 409 IDEMPOTENCY_CONFLICT.
+5 08 request_revisions
+Stores the original student submission and every corrected submission.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Revision identifier
+request_id | BIGINT UNSIGNED, FK -> document_requests.id | Parent request
+revision_number | INT UNSIGNED | Sequential revision
+revision_type | VARCHAR(20) | initial, correction, or draft
+revision_status | VARCHAR(20) | draft or submitted
+payment_reference | VARCHAR(120), nullable | Payment reference for this submission
+payment_receipt_file_id | BIGINT UNSIGNED, nullable, FK -> stored_files.id | Payment receipt evidence
+submitted_by_user_id | BIGINT UNSIGNED, nullable, FK -> users.id | Submitting student
+created_at | DATETIME(6) | Revision creation
+submitted_at | DATETIME(6), nullable | Submission time
+client_submission_key | VARCHAR(64), nullable, UNIQUE | Required for submitted correction revisions; null only for optional drafts
+submission_payload_hash | BINARY(32), nullable | Canonical immutable revision payload hash
+[/TABLE]
+
+Integrity and behavior
+UNIQUE(request_id, revision_number) and UNIQUE(client_submission_key). Submitted revisions are immutable complete snapshots.
+The correction submission key and canonical hash allow retry without creating duplicate revisions. The initial revision also records the initial key and hash.
+revision_type is initial or correction in the first release; draft is reserved. revision_status is submitted in the first release.
+5 09 request_field_values
+Stores student responses to the dynamic fields.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Answer identifier
+revision_id | BIGINT UNSIGNED, FK -> request_revisions.id | Submitted revision
+requirement_id | BIGINT UNSIGNED, FK -> service_requirements.id | Corresponding requirement
+text_value | TEXT, nullable | Answer to a text field
+date_value | DATE, nullable | Answer to a date field
+boolean_value | BOOLEAN, nullable | Checkbox answer
+selected_option_id | BIGINT UNSIGNED, nullable, FK -> requirement_options.id | Dropdown selection
+[/TABLE]
+
+Integrity and behavior
+UNIQUE(revision_id, requirement_id). Exactly one of text_value, date_value, boolean_value or selected_option_id is non-null.
+The requirement belongs to the pinned version; selected_option_id belongs to that requirement. Optional unanswered fields have no row. File answers use request_attachments.
+5 10 stored_files
+Stores metadata and private storage references for uploaded files.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | File identifier
+uploaded_by_user_id | BIGINT UNSIGNED, FK -> users.id | File uploader
+original_filename | VARCHAR(255) | Sanitized original filename for display
+storage_key | VARCHAR(500), UNIQUE | Internal file location reference
+mime_type | VARCHAR(100) | Verified content type
+size_bytes | BIGINT UNSIGNED | File size
+sha256_hex | CHAR(64) | File integrity hash
+storage_status | VARCHAR(20) | staging, ready, or removed
+staging_expires_at | DATETIME(6), nullable | Cleanup deadline for unsubmitted uploads
+created_at | DATETIME(6) | Upload timestamp
+verified_at | DATETIME(6), nullable | File validation completion
+[/TABLE]
+
+Integrity and behavior
+UNIQUE(storage_key). storage_status is staging, ready or removed. Store verified MIME, byte size and SHA-256.
+The sanitized display filename is limited to 128 characters even though the column allows 255. Only validated staging files can be attached.
+A removed record has no downloadable bytes. Referenced historical files cannot be removed by ordinary cleanup.
+5 11 request_attachments
+Associates uploaded files with specific submission requirements.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Attachment record
+revision_id | BIGINT UNSIGNED, FK -> request_revisions.id | Related submission revision
+requirement_id | BIGINT UNSIGNED, FK -> service_requirements.id | Related file requirement
+stored_file_id | BIGINT UNSIGNED, FK -> stored_files.id | Uploaded file
+created_at | DATETIME(6) | Attachment association time
+[/TABLE]
+
+Integrity and behavior
+UNIQUE(revision_id, requirement_id). The requirement must be a file field in the pinned service version.
+An attachment must be owned by the student or legitimately reused from an earlier revision of the same request. Payment receipt linkage is separate.
+5 12 payment_reviews
+Records manual payment evidence reviews performed by registrar staff.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Review identifier
+revision_id | BIGINT UNSIGNED, FK -> request_revisions.id | Evidence being reviewed
+reviewed_by_user_id | BIGINT UNSIGNED, FK -> users.id | Reviewing staff member
+outcome | VARCHAR(25) | verified, needs_correction, or rejected
+review_note | TEXT, nullable | Verification remarks
+reviewed_at | DATETIME(6) | Review timestamp
+[/TABLE]
+
+Integrity and behavior
+outcome is verified, needs_correction or rejected. Reviews are append only and target the current revision in Under Review.
+The latest review ordered by reviewed_at then id determines the payment outcome. A correction revision requires a new review even if evidence was reused.
+Rejecting payment evidence does not itself reject the request or change its status.
+5 13 correction_rounds
+Tracks each time staff formally return a request for correction.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Correction round identifier
+request_id | BIGINT UNSIGNED, FK -> document_requests.id | Related document request
+round_number | INT UNSIGNED | Sequential correction number
+source_revision_id | BIGINT UNSIGNED, FK -> request_revisions.id | Submission that needed correction
+issued_by_user_id | BIGINT UNSIGNED, FK -> users.id | Staff member who issued it
+general_instructions | TEXT | Overall correction explanation
+issued_at | DATETIME(6) | Time correction was requested
+resolved_revision_id | BIGINT UNSIGNED, nullable, FK -> request_revisions.id | Corrected submission
+resolved_at | DATETIME(6), nullable | Time student resubmitted
+[/TABLE]
+
+Integrity and behavior
+UNIQUE(request_id, round_number). One unresolved round per request, enforced while holding a request row lock.
+Source and resolved revisions must belong to the same request; resolved_revision_id and resolved_at are both null or both populated.
+5 14 correction_items
+Stores the individual problems identified by staff.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Correction item identifier
+correction_round_id | BIGINT UNSIGNED, FK -> correction_rounds.id | Parent correction round
+target_kind | VARCHAR(30) | requirement, payment_reference, or payment_receipt
+requirement_id | BIGINT UNSIGNED, nullable, FK -> service_requirements.id | Affected requirement
+instruction | TEXT | What the student must correct
+created_at | DATETIME(6) | Creation time
+[/TABLE]
+
+Integrity and behavior
+target_kind is requirement, payment_reference or payment_receipt. A requirement target requires requirement_id; payment targets require it to be null.
+The requirement belongs to the request's pinned version. A correction round contains at least one actionable item.
+5 15 request_status_history
+Preserves the complete status transition history of a request.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Status event identifier
+request_id | BIGINT UNSIGNED, FK -> document_requests.id | Related request
+revision_id | BIGINT UNSIGNED, nullable, FK -> request_revisions.id | Submission associated with the event
+previous_status | VARCHAR(32), nullable | Previous status
+new_status | VARCHAR(32) | New status
+changed_by_user_id | BIGINT UNSIGNED, nullable, FK -> users.id | Human actor, if applicable
+change_source | VARCHAR(20) | student, staff, or system
+public_remarks | TEXT, nullable | Explanation visible to the student
+internal_remarks | TEXT, nullable | Staff only explanation
+created_at | DATETIME(6) | Transition timestamp
+[/TABLE]
+
+Integrity and behavior
+Append one row per status transition; previous_status is null only for the initial submission.
+change_source is student, staff or system. Students receive only public_remarks. Rejection and cancellation reasons are public.
+5 16 request_notes
+Stores notes that are not necessarily associated with a status transition.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Note identifier
+request_id | BIGINT UNSIGNED, FK -> document_requests.id | Related request
+author_user_id | BIGINT UNSIGNED, FK -> users.id | Note author
+visibility | VARCHAR(20) | staff_only or student_visible
+note_body | TEXT | Note content
+created_at | DATETIME(6) | Creation timestamp
+[/TABLE]
+
+Integrity and behavior
+visibility is staff_only or student_visible. Only staff add notes.
+Notes do not advance the workflow or reset last_progress_at. Student endpoints filter by visibility.
+5 17 notifications
+Stores the messages displayed inside the student and registrar staff notification pages.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Notification identifier
+recipient_user_id | BIGINT UNSIGNED, FK -> users.id | Recipient
+notification_type | VARCHAR(50) | Type of notification
+request_id | BIGINT UNSIGNED, nullable, FK -> document_requests.id | Related request
+service_id | BIGINT UNSIGNED, nullable, FK -> document_services.id | Related service
+automation_job_id | BIGINT UNSIGNED, nullable, FK -> automation_jobs.id | Originating automation job
+event_key | VARCHAR(191) | Unique event identifier for the recipient
+title | VARCHAR(180) | Notification heading
+message | TEXT | Notification content
+read_at | DATETIME(6), nullable | When the recipient read it
+created_at | DATETIME(6) | Notification creation
+[/TABLE]
+
+Integrity and behavior
+UNIQUE(recipient_user_id, event_key). Enforce recipient authorization and current account activity before notification creation.
+Read operations are recipient-only. Insert notification and finalize the successful job in the same transaction.
+5 18 automation_runs
+Stores the execution history of scheduled system operations.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Run identifier
+job_name | VARCHAR(80) | Name of scheduled operation
+trigger_type | VARCHAR(20) | scheduled or manual
+scheduled_for | DATETIME(6), nullable | Intended execution time
+started_at | DATETIME(6) | Actual start
+finished_at | DATETIME(6), nullable | Completion time
+status | VARCHAR(25) | running, succeeded, or failed
+records_scanned | INT UNSIGNED | Number of records examined
+tasks_created | INT UNSIGNED | Number of follow-up tasks generated
+error_code | VARCHAR(80), nullable | Safe error identifier
+error_summary | TEXT, nullable | Sanitized failure explanation
+[/TABLE]
+
+Integrity and behavior
+status is running, succeeded or failed. trigger_type is scheduled or manual.
+Record sanitized errors and counts even for a failed run. After an interrupted process, mark abandoned running runs failed with WORKER_INTERRUPTED.
+5 19 automation_jobs
+Stores individual units of automated work and their retry states.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Job identifier
+automation_run_id | BIGINT UNSIGNED, nullable, FK -> automation_runs.id | Generating run
+job_type | VARCHAR(60) | Type of automated task
+request_id | BIGINT UNSIGNED, nullable, FK -> document_requests.id | Affected request
+recipient_user_id | BIGINT UNSIGNED, nullable, FK -> users.id | Intended notification recipient
+idempotency_key | VARCHAR(191), UNIQUE | Prevents duplicate tasks
+payload_json | JSON, nullable | Limited task parameters
+status | VARCHAR(25) | pending, running, succeeded, failed_permanently or resolved_manually
+attempt_count | SMALLINT UNSIGNED | Number of attempts so far
+max_attempts | SMALLINT UNSIGNED | Retry ceiling
+next_attempt_at | DATETIME(6) | Next eligible execution
+locked_by | VARCHAR(100), nullable | Worker currently executing the task
+locked_until | DATETIME(6), nullable | Worker lease expiration
+last_error_code | VARCHAR(80), nullable | Last failure category
+last_error_summary | TEXT, nullable | Sanitized failure description
+created_at | DATETIME(6) | Task creation
+updated_at | DATETIME(6) | Last state change
+completed_at | DATETIME(6), nullable | Successful or permanent completion
+resolved_by_user_id | BIGINT UNSIGNED, nullable, FK -> users.id | Staff member recording manual resolution
+resolved_at | DATETIME(6), nullable | Manual resolution time
+resolution_note | TEXT, nullable | Required explanation when resolved manually
+[/TABLE]
+
+Integrity and behavior
+UNIQUE(idempotency_key). status is pending, running, succeeded, failed_permanently or resolved_manually. Retry Pending is a UI label for pending with a future next_attempt_at.
+max_attempts is 3 initially. Lease claims and attempt insertion are atomic. resolution fields are populated only for resolved_manually.
+payload_json contains IDs and safe parameters only. Never store tokens, file bytes or complete sensitive responses.
+5 20 automation_attempts
+Preserves each attempt to execute an automation job.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Attempt identifier
+automation_job_id | BIGINT UNSIGNED, FK -> automation_jobs.id | Parent task
+attempt_number | SMALLINT UNSIGNED | Sequential attempt
+worker_identifier | VARCHAR(100), nullable | Executing worker
+started_at | DATETIME(6) | Attempt start
+finished_at | DATETIME(6), nullable | Attempt end
+outcome | VARCHAR(25) | running, succeeded, transient_failure, permanent_failure or interrupted
+error_code | VARCHAR(80), nullable | Failure classification
+error_summary | TEXT, nullable | Sanitized error explanation
+duration_ms | INT UNSIGNED, nullable | Execution duration
+[/TABLE]
+
+Integrity and behavior
+UNIQUE(automation_job_id, attempt_number). Outcomes are running, succeeded, transient_failure, permanent_failure or interrupted.
+Attempt numbers remain sequential across automatic and manual retry cycles. A running attempt has no finished_at; finalized attempts do.
+5 21 request_alerts
+Records aging alerts and escalations for stalled requests.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Alert identifier
+request_id | BIGINT UNSIGNED, FK -> document_requests.id | Affected request
+automation_job_id | BIGINT UNSIGNED, nullable, FK -> automation_jobs.id | Generating task
+alert_type | VARCHAR(25) | aging or escalation
+idempotency_key | VARCHAR(191), UNIQUE | Prevents duplicate alert events
+request_status_at_trigger | VARCHAR(32) | Status when alert was raised
+triggered_at | DATETIME(6) | Alert creation
+resolved_at | DATETIME(6), nullable | When the condition was resolved
+[/TABLE]
+
+Integrity and behavior
+UNIQUE(idempotency_key). alert_type is aging or escalation.
+An open alert corresponds to an active condition and resolves when that condition no longer applies. Alert notifications are deduplicated per episode and recipient.
+5 22 daily_request_summaries
+Stores generated daily request statistics.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Summary identifier
+summary_date | DATE, UNIQUE | Reporting date in Philippine local time
+timezone_name | VARCHAR(64) | Initially Asia/Manila
+submitted_count | INT UNSIGNED | Currently submitted requests
+under_review_count | INT UNSIGNED | Currently under review
+needs_correction_count | INT UNSIGNED | Awaiting student correction
+processing_count | INT UNSIGNED | Currently processing
+ready_for_release_count | INT UNSIGNED | Ready documents
+released_count | INT UNSIGNED | Released but not yet acknowledged
+pending_total | INT UNSIGNED | Total nonterminal submitted requests
+completed_today_count | INT UNSIGNED | Requests completed that day
+rejected_today_count | INT UNSIGNED | Requests rejected that day
+cancelled_today_count | INT UNSIGNED | Requests cancelled that day
+aging_count | INT UNSIGNED | Open aging requests at generation time
+escalated_count | INT UNSIGNED | Open escalations at generation time
+automation_run_id | BIGINT UNSIGNED, nullable, FK -> automation_runs.id | Run that generated the snapshot
+generated_at | DATETIME(6) | Snapshot generation time
+[/TABLE]
+
+Integrity and behavior
+UNIQUE(summary_date). timezone_name is Asia/Manila. pending_total is the sum of Submitted, Under Review, Needs Correction, Processing, Ready for Release and Released counts.
+Current-date regeneration replaces that date's snapshot and records an audit event and automation run. Earlier date snapshots are read only. Count distinct requests for aging_count and escalated_count.
+5 23 audit_logs
+Stores significant system actions for security reviews, debugging, and accountability.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Audit record identifier
+actor_user_id | BIGINT UNSIGNED, nullable, FK -> users.id | Acting user, if applicable
+action | VARCHAR(100) | Operation performed
+target_type | VARCHAR(60) | Type of affected entity
+target_id | BIGINT UNSIGNED, nullable | Affected entity identifier
+request_id | BIGINT UNSIGNED, nullable, FK -> document_requests.id | Related request
+service_id | BIGINT UNSIGNED, nullable, FK -> document_services.id | Related service
+automation_job_id | BIGINT UNSIGNED, nullable, FK -> automation_jobs.id | Related automation task
+result | VARCHAR(20) | success, failure, or denied
+details_json | JSON, nullable | Sanitized event metadata
+created_at | DATETIME(6) | Event time
+[/TABLE]
+
+Integrity and behavior
+result is success, failure or denied. Preserve append-only sanitized evidence of user and system actions.
+target_id is polymorphic metadata, not a foreign key. Use the explicit request, service or job foreign keys when applicable.
+5 24 password_reset_tokens
+Conditional storage for verified account recovery.
+[TABLE]
+Column | MySQL type and nullability | Definition
+id | BIGINT UNSIGNED, PK | Recovery record
+user_id | BIGINT UNSIGNED, FK -> users.id | Account being recovered
+token_hash | BINARY(32), UNIQUE | Secure hash of a random reset token
+created_at | DATETIME(6) | Token creation
+expires_at | DATETIME(6) | Expiration
+used_at | DATETIME(6), nullable | Successful one time use
+[/TABLE]
+
+Integrity and behavior
+Conditional migration only. Store a hash of a random single-use token and reject used or expired tokens.
+Recovery requires a verified channel; on success invalidate all sessions and unused reset tokens. No reset routes are enabled in the initial release.
+Indexes and migration order
+[TABLE]
+Table | Composite index | Supports
+document_requests | (student_user_id, created_at) | My Requests
+document_requests | (status, submitted_at) | Staff request queues
+document_requests | (service_id, status) | Document based filtering
+document_requests | (status, due_at) | Aging scans
+request_status_history | (request_id, created_at) | Tracking timeline
+request_notes | (request_id, created_at) | Request notes
+notifications | (recipient_user_id, read_at, created_at) | Notification feeds
+stored_files | (uploaded_by_user_id, storage_status, created_at) | File management and cleanup
+automation_jobs | (status, next_attempt_at) | Worker job selection
+request_alerts | (request_id, alert_type, resolved_at) | Active request alerts
+audit_logs | (actor_user_id, created_at) | User activity
+audit_logs | (request_id, created_at) | Request audit
+audit_logs | (created_at) | Recent system events
+[/TABLE]
+
+Add an index on every foreign key not already covered by a suitable leading index. Add payment_reviews(revision_id, reviewed_at, id), request_revisions(request_id, revision_number), correction_rounds(request_id, resolved_at) and automation_jobs(status, locked_until). Preserve unique keys defined with each table.
+Create users, service identities, versions, requirements and options before request children. Create stored_files before receipt references. Defer document_services.current_version_id until the version table exists; likewise add notification and alert job references after automation_jobs exists. Alembic explicitly creates each deferred foreign key. Seed controlled accounts and two published services after migrations. Verify every unique key, CHECK and foreign key against an empty MySQL database.
+6 API contract and examples
+API conventions
+[TABLE]
+Property | Agreed specification
+Backend framework | Python FastAPI
+API base path | /api/v1
+Data format | JSON for ordinary requests and responses
+File upload format | multipart/form-data
+Authentication | Server managed opaque sessions
+Authorization | Enforced by FastAPI
+Timestamps | ISO 8601 in UTC
+Monetary amounts | Decimal values represented as strings in JSON
+Request statuses | Lowercase snake case
+Pagination | Page number and page size
+Successful creation | HTTP 201 Created
+Ordinary successful operation | HTTP 200 OK
+Successful deletion without response body | HTTP 204 No Content
+Documentation | FastAPI generated OpenAPI and Swagger UI
+[/TABLE]
+
+All paths in this chapter are relative to /api/v1. Request and response bodies are JSON except multipart uploads and binary downloads. Reject unknown input properties. Credentials, roles, ownership, configured payment amounts and timestamps cannot be set by student payloads. Return 201 for new resources, 200 for ordinary success and successful replay, and 204 for deletion or logout without a body.
+Each JSON response uses the resource shape defined below. Lists use {items, page, page_size, total}; page defaults to 1, page_size to 20 and is capped at 100. Newest-first ordering is created_at DESC, id DESC unless specified. History and revisions use ascending event or revision order. Dates accept YYYY-MM-DD; timestamps use UTC ISO 8601. Monetary values are strings.
+Session and browser security contract
+GET /auth/csrf returns a short-lived signed token and sets a binding cookie. Flutter sends X-CSRF-Token on all browser state-changing calls, including registration and login. Validate the signature, cookie binding and configured Origin before processing. Renew the binding on login. The token is not an authentication credential and is never placed in logs.
+Login creates an opaque 256-bit random session, stores only its SHA-256 hash and sets the sdrt_session cookie with HttpOnly, Secure in production, SameSite=Lax and Path=/. Standard sessions expire after 8 hours; Remember Me sessions expire after 30 days. Expiry is absolute and server enforced. Local HTTP development may disable Secure only in the development configuration. Same-origin production routing is preferred; cross-origin development enables credentials only for explicit allowed origins.
+Passwords use Argon2id through a maintained library. Accept 12-128 characters without silent truncation. Registration and password change require matching confirmation. Rate-limit login and registration at the server and return 429 with Retry-After. Invalid login returns 401 INVALID_CREDENTIALS with a neutral message. must_change_password restricts a temporary-password session to identity, CSRF, password change and logout endpoints until replacement succeeds.
+Authentication and accounts
+[TABLE]
+Method | Endpoint | Access | Purpose
+GET | /auth/csrf | Public | Obtain a CSRF token for browser form operations
+POST | /auth/register | Public | Register a student account
+POST | /auth/login | Public | Authenticate student or staff
+GET | /auth/me | Authenticated | Retrieve the current user's identity, profile, role, and permissions
+POST | /auth/logout | Authenticated | Invalidate the current session
+PATCH | /account/me | Authenticated | Update permitted profile information
+POST | /account/password | Authenticated | Change password after verifying current password
+[/TABLE]
+
+Document services
+[TABLE]
+Method | Endpoint | Access | Purpose
+GET | /services | Authenticated | List active published services
+GET | /services/{id} | Authenticated | Retrieve a published service and its complete requirements
+GET | /staff/services | Staff | List active, inactive, and draft services
+GET | /staff/services/{id} | Staff | View service details and version information
+POST | /staff/services | Service manager | Create a new service with an initial draft
+GET | /staff/services/{id}/draft | Service manager | Retrieve the current editable draft
+POST | /staff/services/{id}/draft | Service manager | Create a draft from the published version
+PUT | /staff/services/{id}/draft | Service manager | Save a full draft configuration
+POST | /staff/services/{id}/publish | Service manager | Publish the validated draft
+PATCH | /staff/services/{id}/availability | Service manager | Activate or deactivate a service
+[/TABLE]
+
+Student requests and tracking
+[TABLE]
+Method | Endpoint | Access | Purpose
+POST | /requests | Student | Submit a new document request
+GET | /requests | Student / Staff | List accessible requests with filters and pagination
+GET | /requests/{id} | Owner / Staff | View request details
+GET | /requests/{id}/history | Owner / Staff | Retrieve the request status timeline
+GET | /requests/{id}/revisions | Owner / Staff | List previous submissions and corrections
+GET | /requests/{id}/revisions/{number} | Owner / Staff | View a specific revision
+GET | /requests/{id}/notes | Owner / Staff | Retrieve permitted request notes
+POST | /requests/{id}/correction-submissions | Owner | Submit corrected requirements
+POST | /requests/{id}/cancel | Owner | Cancel an eligible request
+POST | /requests/{id}/acknowledge | Owner | Acknowledge document receipt
+[/TABLE]
+
+Registrar request actions
+[TABLE]
+Method | Endpoint | Access | Purpose
+POST | /staff/requests/{id}/begin-review | Staff | Move Submitted -> Under Review
+POST | /staff/requests/{id}/payment-reviews | Staff | Verify or reject payment evidence
+POST | /staff/requests/{id}/corrections | Staff | Return a request for correction
+POST | /staff/requests/{id}/approve | Staff | Approve requirements and begin Processing
+POST | /staff/requests/{id}/reject | Staff | Reject the document request with a reason
+POST | /staff/requests/{id}/ready-for-release | Staff | Move Processing -> Ready for Release
+POST | /staff/requests/{id}/release | Staff | Confirm physical document release
+POST | /staff/requests/{id}/notes | Staff | Add an internal or student visible note
+[/TABLE]
+
+Private files
+[TABLE]
+Method | Endpoint | Access | Purpose
+POST | /files/staging | Student | Upload and validate a temporary file
+GET | /files/{id} | Authorized owner / Staff | Securely view or download an attachment
+DELETE | /files/staging/{id} | Upload owner | Remove an unsubmitted temporary upload
+[/TABLE]
+
+Notifications and dashboards
+[TABLE]
+Method | Endpoint | Access | Purpose
+GET | /dashboard | Authenticated | Return role appropriate dashboard statistics
+GET | /notifications | Authenticated | List the current user's notifications
+PATCH | /notifications/{id}/read | Recipient | Mark a notification as read
+POST | /notifications/read-all | Authenticated | Mark all current user's notifications as read
+[/TABLE]
+
+Reports and operations
+[TABLE]
+Method | Endpoint | Access | Purpose
+GET | /staff/reports/daily | Staff | Retrieve daily request summaries
+POST | /staff/reports/daily/regenerate | Staff | Recalculate a requested daily summary
+GET | /staff/alerts | Staff | View aging and escalation records
+GET | /staff/automation/runs | Staff | View scheduled execution history
+GET | /staff/automation/jobs | Staff | View automation tasks and their statuses
+GET | /staff/automation/jobs/{id} | Staff | View task details and retry attempts
+POST | /staff/automation/jobs/{id}/retry | Staff | Safely retry an eligible failed task
+POST | /staff/automation/jobs/{id}/resolve | Staff | Mark a permanently failed task as manually handled
+GET | /staff/audit-logs | Staff | View sanitized audit records
+[/TABLE]
+
+Service history is returned by GET /staff/services/{id} as published version metadata and full pinned published configurations. Draft payloads are excluded for ordinary staff; managers retrieve the editable configuration from the draft route. Staff preview is a local rendering of that configuration and creates no request.
+Shared input and output types
+[TABLE]
+Type | Fields and rules
+User | id, role, full_name, email, phone_number, student_number or staff_number, can_manage_services, must_change_password; no password hash or session token
+VersionedAction | expected_row_version: positive integer; public_remarks: optional string up to 2000 characters. Workflow results return id, request_number, status, row_version, current_revision_number and relevant timestamps
+TypedAnswer | requirement_id plus exactly one text_value, date_value, boolean_value or selected_option_id. File fields are represented only in attachments
+AttachmentInput | requirement_id and stored_file_id, each a positive integer
+Submission | client_submission_key UUID, service_id, service_version_id, answers array, attachments array, and payment object when applicable. Payment contains reference and/or receipt_file_id according to version flags
+CorrectedSubmission | client_submission_key, expected_row_version, correction_round_id and a complete answers/attachments/payment snapshot. The service and version are inherited from the request, not editable
+RequestDetail | id, request_number, student summary where authorized, service_id, service_version_id, pinned service name, status, row_version, current_revision_number, submitted_at, due_at, last_progress_at, released_at, acknowledged_at, closed_at, latest revision, payment outcome and open correction round
+Revision | id, revision_number, revision_type, submitted_at, typed answers, attachment descriptors and conditional payment evidence. Attachment descriptors expose id, display filename, MIME and size, never storage_key
+ServiceConfiguration | service identity, availability, version id/number/row_version, name, description, category, eligibility instructions, processing_days, currency, conditional payment configuration and ordered requirements/options
+Notification | id, notification_type, title, message, created_at, read_at and authorized request_id/service_id links
+AutomationJob | id, job_type, status, attempt_count, max_attempts, next_attempt_at, safe last error, timestamps and resolution metadata. Job details include attempts but omit locked_by internals and sensitive payloads
+[/TABLE]
+
+Operation request and response contracts
+All protected routes may return 401, 403 or 404 as applicable. Every mutating browser call may return 403 CSRF_FAILED; validation errors return 422. Workflow actions additionally return 409 STATUS_CONFLICT or VERSION_CONFLICT. Unexpected errors follow the shared error contract. The records below define operation-specific inputs and success bodies.
+GET  auth csrf
+Input: No body.
+Result: 200 {csrf_token, expires_at}; binding cookie is set.
+POST  auth register
+Input: full_name 2-150, student_number 1-50, normalized email, password, password_confirmation, terms_accepted=true; phone_number optional up to 30.
+Result: 201 User; no automatic login. 409 DUPLICATE_RESOURCE for email or student number.
+POST  auth login
+Input: login string containing email or student number, password, remember_me boolean default false.
+Result: 200 User and protected session cookie. 401 INVALID_CREDENTIALS; 429 RATE_LIMITED.
+GET  auth me
+Input: No body.
+Result: 200 User. Session expiry returns 401.
+POST  auth logout
+Input: No body.
+Result: 204; revoke current session and expire cookie.
+PATCH  account me
+Input: email and/or phone_number only.
+Result: 200 User; 409 DUPLICATE_RESOURCE for duplicate email. Identity, roles and permissions are immutable here.
+POST  account password
+Input: current_password, new_password, new_password_confirmation.
+Result: 204; replace hash, clear must_change_password, revoke all sessions and expire cookie. Client signs in again.
+GET  services
+Input: page, page_size, q, category optional.
+Result: 200 list of active published service cards: id, name, description, category, requirement_count, processing_days, payment_required.
+GET  services {id}
+Input: Path service id.
+Result: 200 ServiceConfiguration for current active publication; otherwise 404.
+GET  staff services
+Input: page, page_size, q, availability=active|inactive|all; default all.
+Result: 200 list of service identities and current version metadata.
+GET  staff services {id}
+Input: Path service id.
+Result: 200 identity, current published configuration and published version history. Draft contents remain manager-only.
+POST  staff services
+Input: service_code 3-50, plus complete draft ServiceConfiguration without server generated IDs.
+Result: 201 service identity and initial draft; inactive until publication and activation. 409 duplicate code.
+GET  staff services {id} draft
+Input: No body.
+Result: 200 editable draft and row_version; 404 if absent.
+POST  staff services {id} draft
+Input: No body; clone current publication or create empty draft when no publication exists.
+Result: 201 draft. 409 DRAFT_ALREADY_EXISTS when another editable draft exists.
+PUT  staff services {id} draft
+Input: expected_row_version and complete editable configuration with ordered requirements/options; existing IDs must belong to this draft.
+Result: 200 saved draft with incremented row_version; 409 VERSION_CONFLICT.
+POST  staff services {id} publish
+Input: expected_row_version; activate boolean default false.
+Result: 200 published ServiceConfiguration; validate limits, freeze draft and atomically update current_version_id. 409 VERSION_CONFLICT.
+PATCH  staff services {id} availability
+Input: is_active boolean; expected_current_version_id matching current pointer.
+Result: 200 identity and availability; activation requires a publication. 409 VERSION_CONFLICT if pointer changed.
+POST  requests
+Input: Submission.
+Result: 201 {id, request_number, status, row_version, revision_number, submitted_at}; 200 for same-key replay. 409 SERVICE_VERSION_CHANGED or IDEMPOTENCY_CONFLICT.
+GET  requests
+Input: page, page_size, q, status, service_id, submitted_from, submitted_to; staff may filter student_number. Date ranges use inclusive from and exclusive to UTC.
+Result: 200 list of request summaries. Student scope is always session owner.
+GET  requests {id}
+Input: Path request id.
+Result: 200 RequestDetail. Student view omits internal metadata.
+GET  requests {id} history
+Input: page, page_size optional; ascending created_at, id.
+Result: 200 list of status events with actor category and public remarks; internal remarks staff-only.
+GET  requests {id} revisions
+Input: page, page_size optional; ascending revision_number.
+Result: 200 list of revision metadata.
+GET  requests {id} revisions {number}
+Input: Path request id and revision number.
+Result: 200 Revision; 404 if revision is not part of this request.
+GET  requests {id} notes
+Input: page, page_size optional.
+Result: 200 list of notes. Students receive student_visible notes only.
+POST  requests {id} correction-submissions
+Input: CorrectedSubmission; only correction-target elements may differ from the prior revision.
+Result: 201 revision result and under_review status; 200 same-key replay. 409 stale round, state, version or key conflict.
+POST  requests {id} cancel
+Input: expected_row_version and reason string 1-2000.
+Result: 200 VersionedAction result; 409 unless Submitted or Under Review.
+POST  requests {id} acknowledge
+Input: expected_row_version and confirm_received=true.
+Result: 200 result with completed status and acknowledged_at. Requires Released.
+POST  staff requests {id} begin-review
+Input: VersionedAction.
+Result: 200 result with under_review status. Requires Submitted.
+POST  staff requests {id} payment-reviews
+Input: expected_row_version, revision_id, outcome=verified|needs_correction|rejected, review_note up to 2000; nonempty note for adverse outcomes.
+Result: 201 review id, outcome, revision_id and new row_version; workflow status unchanged. Only Under Review and payment-required versions.
+POST  staff requests {id} corrections
+Input: expected_row_version, general_instructions 1-2000, items array with target_kind, conditional requirement_id and instruction 1-2000.
+Result: 201 correction_round_id, needs_correction status and row_version.
+POST  staff requests {id} approve
+Input: VersionedAction and confirm_requirements_valid=true.
+Result: 200 processing result. 409 PAYMENT_NOT_VERIFIED if required current payment review is not verified.
+POST  staff requests {id} reject
+Input: expected_row_version and reason 1-2000.
+Result: 200 rejected result and closed_at. Requires Under Review.
+POST  staff requests {id} ready-for-release
+Input: VersionedAction and confirm_prepared=true.
+Result: 200 ready_for_release result. Requires Processing.
+POST  staff requests {id} release
+Input: VersionedAction and confirm_handover=true.
+Result: 200 released result, released_at and released_by_user_id. Requires Ready for Release.
+POST  staff requests {id} notes
+Input: visibility=staff_only|student_visible and note_body 1-4000.
+Result: 201 {id, visibility, note_body, author_user_id, created_at}. Does not change status or progress timestamp.
+POST  files staging
+Input: multipart/form-data with a single file field named file.
+Result: 201 {id, original_filename, mime_type, size_bytes, storage_status, staging_expires_at}. 413 size, 415 type or 422 corrupt/encrypted content.
+GET  files {id}
+Input: Optional disposition=inline|attachment; default attachment.
+Result: 200 authorized bytes with verified Content-Type, safe Content-Disposition, Cache-Control: private, no-store and X-Content-Type-Options: nosniff. 404 if unavailable or unauthorized.
+DELETE  files staging {id}
+Input: No body; owner only.
+Result: 204 after safe unreferenced deletion. 409 FILE_ALREADY_ATTACHED for a committed file.
+GET  dashboard
+Input: No body.
+Result: 200 role-specific counts, recent requests and notifications; staff overview may include active service cards and current summary snapshot.
+GET  notifications
+Input: page, page_size, state=all|unread|read; default all.
+Result: 200 recipient-only Notification list.
+PATCH  notifications {id} read
+Input: No body.
+Result: 200 Notification; repeat calls preserve original read_at.
+POST  notifications read-all
+Input: No body.
+Result: 200 {updated_count}; mark only current recipient records existing at transaction time.
+GET  staff reports daily
+Input: date=YYYY-MM-DD in Asia/Manila; default current local date.
+Result: 200 daily summary record; 404 SUMMARY_NOT_GENERATED when absent.
+POST  staff reports daily regenerate
+Input: date=current Asia/Manila date.
+Result: 200 recalculated snapshot and automation_run_id; other dates return 422. Concurrent same-date generations serialize.
+GET  staff alerts
+Input: page, page_size, alert_type, state=open|resolved|all, request_id.
+Result: 200 alert list with safe request metadata; default open.
+GET  staff automation runs
+Input: page, page_size, job_name, status, started_from, started_to.
+Result: 200 sanitized run list.
+GET  staff automation jobs
+Input: page, page_size, status, job_type, request_id.
+Result: 200 AutomationJob list.
+GET  staff automation jobs {id}
+Input: Path job id.
+Result: 200 AutomationJob with ordered attempt history.
+POST  staff automation jobs {id} retry
+Input: reason 1-2000.
+Result: 200 pending job after supported-operation and failure checks. 409 if running, resolved or succeeded; audit actor and reason.
+POST  staff automation jobs {id} resolve
+Input: resolution_note 1-2000.
+Result: 200 resolved_manually job with actor and time. Requires failed_permanently; 409 otherwise.
+GET  staff audit-logs
+Input: page, page_size, q, actor_user_id, action, request_id, result, created_from, created_to.
+Result: 200 sanitized audit list; no secret or full evidence payloads.
+Example service configuration
+{
+  "id": 3,
+  "service_code": "CERT_ENROLLMENT",
+  "is_active": true,
+  "version": {
+    "id": 8,
+    "version_number": 2,
+    "name": "Certificate of Enrollment",
+    "description": "Request proof of current enrollment.",
+    "processing_days": 3,
+    "payment": {
+      "required": true,
+      "amount": "50.00",
+      "currency": "PHP",
+      "instructions": "Use the approved test payment reference.",
+      "reference_required": true,
+      "receipt_required": true
+    },
+    "requirements": [
+      {
+        "id": 21,
+        "field_key": "purpose",
+        "label": "Purpose of Request",
+        "field_type": "text",
+        "required": true,
+        "min_length": 3,
+        "max_length": 200,
+        "sort_order": 1
+      },
+      {
+        "id": 22,
+        "field_key": "request_category",
+        "label": "Request Category",
+        "field_type": "select",
+        "required": true,
+        "sort_order": 2,
+        "options": [
+          {
+            "id": 65,
+            "value": "scholarship",
+            "label": "Scholarship"
+          },
+          {
+            "id": 66,
+            "value": "employment",
+            "label": "Employment"
+          }
+        ]
+      },
+      {
+        "id": 23,
+        "field_key": "supporting_id",
+        "label": "Supporting ID",
+        "field_type": "file",
+        "required": true,
+        "sort_order": 3,
+        "allowed_mime_types": [
+          "image/jpeg",
+          "image/png",
+          "application/pdf"
+        ],
+        "max_file_size_bytes": 5242880
+      }
+    ]
+  }
+}
+
+This is an API contract example using test identifiers. Add version.row_version to manager draft responses; payment details and requirement IDs always come from the relevant version. The examples below refer to service 3, version 8, requirements 21-23 and option 65.
+Example login
+POST /api/v1/auth/login
+X-CSRF-Token: signed token from the CSRF endpoint
+
+{
+  "login": "student@example.test",
+  "password": "TrainingPass2026!",
+  "remember_me": false
+}
+
+HTTP 200 sets the protected session cookie and returns User. The example password belongs only to a controlled test account and is never a deployment credential.
+Example initial submission
+POST /api/v1/requests
+
+{
+  "client_submission_key": "7dd20fc0-94d8-475e-9ce7-bccfc8a847d3",
+  "service_id": 3,
+  "service_version_id": 8,
+  "answers": [
+    {
+      "requirement_id": 21,
+      "text_value": "Scholarship application"
+    },
+    {
+      "requirement_id": 22,
+      "selected_option_id": 65
+    }
+  ],
+  "attachments": [
+    {
+      "requirement_id": 23,
+      "stored_file_id": 104
+    }
+  ],
+  "payment": {
+    "reference": "TRAINING-2026-001",
+    "receipt_file_id": 105
+  }
+}
+
+HTTP 201
+{
+  "id": 184,
+  "request_number": "SDRT-2026-000184",
+  "status": "submitted",
+  "row_version": 1,
+  "revision_number": 1,
+  "submitted_at": "2026-10-30T10:30:00Z"
+}
+
+Example correction round and complete resubmission
+POST /api/v1/staff/requests/184/corrections
+
+{
+  "expected_row_version": 3,
+  "general_instructions": "Replace the unreadable supporting ID.",
+  "items": [
+    {
+      "target_kind": "requirement",
+      "requirement_id": 23,
+      "instruction": "Upload a clear image showing all required details."
+    }
+  ]
+}
+
+HTTP 201 returns correction_round_id=2, status=needs_correction and row_version=4. The row version may have reached 3 through review and payment review actions.
+POST /api/v1/requests/184/correction-submissions
+
+{
+  "client_submission_key": "11cb18f7-509b-4493-9bd0-a0e436e1f211",
+  "answers": [
+    {
+      "requirement_id": 21,
+      "text_value": "Scholarship application"
+    },
+    {
+      "requirement_id": 22,
+      "selected_option_id": 65
+    }
+  ],
+  "attachments": [
+    {
+      "requirement_id": 23,
+      "stored_file_id": 106
+    }
+  ],
+  "payment": {
+    "reference": "TRAINING-2026-001",
+    "receipt_file_id": 105
+  },
+  "expected_row_version": 4,
+  "correction_round_id": 2
+}
+
+HTTP 201
+{
+  "id": 184,
+  "status": "under_review",
+  "row_version": 5,
+  "revision_number": 2,
+  "correction_round_id": 2
+}
+
+Receipt 105 and unchanged answers are reused; supporting file 104 remains in revision 1 while file 106 belongs to revision 2. Payment verification must be recorded again against revision 2 before approval.
+Example concurrent update and validation errors
+{
+  "code": "VERSION_CONFLICT",
+  "detail": "The request changed. Reload its current details.",
+  "field_errors": [],
+  "trace_id": "7c91ab"
+}
+
+{
+  "code": "VALIDATION_FAILED",
+  "detail": "One or more requirements are invalid.",
+  "field_errors": [
+    {
+      "field": "requirement_23",
+      "message": "This attachment is required."
+    }
+  ],
+  "trace_id": "8d62be"
+}
+
+HTTP error catalogue
+[TABLE]
+HTTP status | Error code | Meaning
+400 | INVALID_OPERATION | Request cannot be interpreted as a valid operation
+401 | AUTHENTICATION_REQUIRED | Missing, expired, or invalid session
+403 | PERMISSION_DENIED | User is authenticated but not authorized
+404 | RESOURCE_NOT_FOUND | Resource does not exist or must not be disclosed
+409 | STATUS_CONFLICT | Requested action conflicts with current status
+409 | VERSION_CONFLICT | Another operation modified the record
+409 | SERVICE_VERSION_CHANGED | Student form is based on an outdated service version
+409 | DUPLICATE_RESOURCE | Duplicate email, student ID, or service code
+413 | FILE_TOO_LARGE | Uploaded file exceeds limits
+415 | UNSUPPORTED_FILE_TYPE | File format not accepted
+422 | VALIDATION_FAILED | Required or submitted fields are invalid
+429 | RATE_LIMITED | Too many requests or login attempts
+500 | INTERNAL_ERROR | Unexpected backend failure
+503 | SERVICE_UNAVAILABLE | Database or dependency temporarily unavailable
+[/TABLE]
+
+[TABLE]
+HTTP | Additional code | Meaning
+401 | INVALID_CREDENTIALS | Neutral invalid login response
+403 | CSRF_FAILED | Missing or invalid CSRF binding or disallowed origin
+409 | IDEMPOTENCY_CONFLICT | Submission key was reused with a different canonical payload
+409 | PAYMENT_NOT_VERIFIED | Required current revision payment evidence is not verified
+409 | DRAFT_ALREADY_EXISTS | Only one editable draft may exist per service
+409 | FILE_ALREADY_ATTACHED | A referenced submitted file cannot be deleted
+404 | SUMMARY_NOT_GENERATED | No stored snapshot exists for the reporting date
+[/TABLE]
+
+Retry and idempotency behavior
+Canonicalize the validated business payload after trimming normalized text, sorting answer and attachment arrays by requirement_id and resolving unchanged values. Exclude expected_row_version and client_submission_key from the hash. Store SHA-256 in the request or revision record. Before current-state validation on a retry, look up the authenticated owner and key; a matching hash returns the original immutable creation result even if the service or workflow later changed. A different hash returns 409. Another owner never receives the original resource.
+The unique key and transaction handle concurrent duplicate calls. On a uniqueness collision, roll back and re-read the committed record before comparing. Initial replay returns the original submitted status and creation metadata; Flutter then fetches current details. Correction replay returns that revision's original result. Other workflow actions use optimistic concurrency: after a timeout, fetch current state rather than blindly replaying the action.
+7 Dynamic requirement configuration
+Supported field types
+[TABLE]
+Field type | Flutter widget | Database storage | Supported validation
+text | TextFormField | request_field_values.text_value | Required, minimum length, maximum length
+select | Dropdown | selected_option_id | Required, valid configured option
+date | Date picker | date_value | Required, valid date
+checkbox | Checkbox | boolean_value | Required or optional
+file | Upload control | request_attachments | File type, size, required
+[/TABLE]
+
+The builder supports only text, select, date, checkbox and file. Each file requirement accepts one file. Staff add another requirement for another document. Conditional branching, calculated fields, nested sections and arbitrary scripts are excluded.
+Configuration limits
+[TABLE]
+Configuration | Limit
+Document name | 3 to 150 characters
+Processing estimate | 1 to 30 calendar days
+Number of requirements | Maximum 20
+Dropdown choices per field | Maximum 30
+Text answer length | Maximum 1,000 characters
+Upload requirement count | Must fit within the global file limit
+Payment amount | Positive decimal amount when payment is required
+Allowed upload formats | Subset of the globally permitted PDF, JPG, and PNG types
+[/TABLE]
+
+A payable version has a positive amount, PHP currency and nonempty instructions; at least one of payment_reference_required or payment_receipt_required must be true. An unpaid version has no payment evidence fields. All file limits are subsets of the global policy. Up to 20 requirements are allowed, but no more than 10 file references may be required or submitted in a revision including the conditional receipt.
+Validation and representation
+[TABLE]
+Field | Flutter widget and API value | Backend rule
+text | Text input; text_value | Trim whitespace and enforce configured limits up to 1000 characters
+select | Dropdown; selected_option_id | Option belongs to the requirement; no arbitrary option text
+date | Date picker; date_value YYYY-MM-DD | Valid calendar date; no timezone conversion of the calendar value
+checkbox | Checkbox; boolean_value | A required confirmation must be true; optional false is a valid answer
+file | Upload control; AttachmentInput | Owned validated file; one per requirement; compatible MIME and byte size
+[/TABLE]
+
+Reject duplicate requirement IDs, unknown IDs, fields from another version, multiple typed values, answer rows for file fields, attachment rows for non-file fields and extra payment properties when payment is disabled. Required text cannot be blank. Omitted optional fields have no stored answer row. Render requirements and options by sort_order with id as a stable tie breaker.
+Draft editing and publication
+Create a stable service identity and one editable draft. Draft edits may remove fields or incompatible settings because no submitted request depends on them. Preview uses the same Flutter widgets as the student form with uploads and submission disabled. Publication validates the full configuration, freezes it and updates the service current pointer in one transaction. A subsequent edit clones a new version, including new requirement and option IDs.
+A student opening an older version must reload if the current publication changes before initial submission; return 409 SERVICE_VERSION_CHANGED. After successful submission, all corrections and historical views remain pinned to that original version. Service deactivation does not invalidate existing requests.
+8 File upload and storage rules
+Global file policy
+[TABLE]
+Rule | Final prototype setting
+Allowed images | .jpg, .jpeg, .png
+Allowed documents | .pdf
+Maximum file size | 5 MiB per file
+Maximum combined attachments per request revision | 25 MiB
+Maximum files referenced by one revision | 10, including payment receipt
+Empty files | Rejected
+Password protected PDFs | Rejected for the prototype
+ZIP and archive uploads | Not allowed
+Executables and scripts | Not allowed
+Original filename length | Maximum 128 characters after sanitization
+Temporary upload expiry | 24 hours if unused
+Download access | Authenticated and authorized only
+Storage location | Private directory outside Flutter's web assets and public server directory
+File identifiers | Randomized server generated storage keys
+[/TABLE]
+
+Exact limits are 5,242,880 bytes per file, 26,214,400 bytes combined and 10 file references per revision including the payment receipt. Each file field and the receipt are separate slots; a single file ID cannot fill multiple slots within one revision. Unchanged file references may be reused across revisions of the same request. A service may tighten these limits but never raise them.
+Validation and private storage
+Stream uploads with a hard byte limit; reject empty files. Check the extension, declared MIME, signature and decoded structure. Accept only JPEG, PNG and unencrypted PDF. Reject corrupt files, archives, executables and scripts. Apply image pixel and decompression limits, bounded PDF parsing and inspection timeouts. Sanitize the display filename to at most 128 characters and generate an independent random storage key.
+Use FastAPI UploadFile for multipart handling. The upload and private-storage controls follow the FastAPI request-file documentation and OWASP file-upload guidance listed in Chapter 15. Validation is not a guarantee against malware. Classroom demonstrations use controlled non-sensitive evidence; public use of real documents requires an approved scanning and retention policy.
+Lifecycle and access
+Upload into private temporary storage, complete validation, then create stored_files with storage_status=staging, verified_at and a 24-hour staging_expires_at. On request submission, lock each selected file record, validate ownership and limits, link the revision and set ready. The bytes may remain at the same private storage key; a database status change commits the evidence without copying it.
+Students may view their staged uploads and evidence attached to their own requests. Staff may view submitted evidence through the registrar workflow, including historical revisions and payment receipts. Staff cannot browse another user's unsubmitted staging files. Anonymous users and unrelated students receive no file data. Downloads validate both ordinary attachment links and the separate payment receipt link.
+Use authenticated streaming, safe Content-Disposition, a verified MIME, private no-store caching and nosniff. Never reveal filesystem paths or issue permanent public URLs. Render authorized preview content in an isolated viewer; offer download when inline preview is unavailable.
+Replacement and cleanup
+Replacement creates a new stored file and a new immutable request revision. Preserve the old file and prior linkage. Reuse only unchanged evidence from the same request, or a staging file owned by the current student. A ready file from an unrelated request cannot be silently attached to a new request.
+The daily 02:00 Asia/Manila cleanup locks expired staging records and checks request_attachments and request_revisions.payment_receipt_file_id immediately before deletion. It never removes referenced evidence. Mark unreferenced expired records removed and delete their bytes with a retryable cleanup step. A submission using a removed file fails validation. Clean partial upload files only after a 24-hour safety window, and reconcile metadata against private bytes after crashes.
+Initial prototype retention preserves all submitted evidence and history for the assessment period. Ordinary UI deletion is unavailable. Before use beyond the controlled prototype, the institution must approve a retention period and deletion process covering live records, private files and backups.
+9 Automation and failure recovery
+Trigger and execution patterns
+[TABLE]
+Pattern | Tracker example | Execution and failure behavior
+Event driven | Submission, correction, publication or status transition | API transaction inserts durable jobs; worker retries failed delivery without replaying the business action
+Scheduled scan | Aging, stalled cases, staging cleanup and daily summary | Dedicated scheduler initiates database scans; idempotency prevents duplicate alerts or snapshots
+Authorized manual | Current-date summary regeneration or failed-job retry | Staff requests a supported operation; backend checks eligibility, audits the actor and preserves attempt history
+[/TABLE]
+
+Automation event inventory
+[TABLE]
+Automation | Trigger | Action
+Request submission notification | Request successfully submitted | Notify student and registrar staff
+Review started notification | Status becomes Under Review | Notify student
+Correction notification | Status becomes Needs Correction | Notify student with request link
+Resubmission notification | Corrected revision submitted | Notify staff
+Approval notification | Status becomes Processing | Notify student
+Rejection notification | Status becomes Rejected | Notify student with reason
+Release readiness notification | Status becomes Ready for Release | Notify student
+Released notification | Status becomes Released | Notify student to acknowledge receipt
+Completion notification | Status becomes Completed | Notify relevant staff
+New service announcement | Service is published and activated | Notify students
+Aging detection | Periodic scheduled scan | Identify overdue staff action requests
+Stalled request escalation | Periodic scheduled scan | Flag requests requiring attention
+Daily pending summary | Daily scheduled run | Generate registrar summary
+Failed job processing | Periodic worker execution | Retry eligible tasks
+Staging file cleanup | Scheduled run | Remove expired unused uploads
+[/TABLE]
+
+Cancellation also queues a status notification to the student and registrar staff. Notify active authorized registrar accounts for new submissions, corrections, completion, cancellation and operational failures; notify active students for service publications. For service announcements, use the published version and recipient as the event scope. Repeated activation of the same version does not reannounce it.
+Schedules
+[TABLE]
+Task | Frequency | Time basis
+Notification job processing | Every minute | UTC
+Retry eligible jobs | Every minute | UTC
+Aging request scan | Every 15 minutes | UTC
+Stalled request scan | Every 15 minutes | UTC
+Daily request summary | Every day at 5:00 PM | Asia/Manila
+Expired staging upload cleanup | Every day at 2:00 AM | Asia/Manila
+[/TABLE]
+
+Run exactly one APScheduler 3.x scheduler with explicit job IDs, coalesce=true and max_instances=1 for each trigger. APScheduler triggers are re-registered at startup; the 23-table application model stores business work and execution history, not an APScheduler SQL job store. Do not start a scheduler in each FastAPI web worker.
+Aging and stalled request rules
+Aging applies when now >= due_at and status is Submitted, Under Review, Processing or Ready for Release. Escalate if now >= due_at + 48 hours in those states, or when Submitted or Under Review has no meaningful progress for 72 hours. Needs Correction, Released and terminal states are excluded from staff delay scans.
+Resolve alerts when their predicate becomes false. Use event keys built from request ID, alert type and episode anchor: due_at for overdue episodes and last_progress_at for no-progress episodes. When both escalation predicates are true, create one escalation for that episode and include both reasons in safe job metadata. Count distinct requests rather than alert rows in summary metrics. Escalation creates an in-app staff alert without introducing supervisors or assignment logic.
+Daily summary semantics
+At 17:00 Asia/Manila, calculate all counts in a consistent database snapshot. Store one row for the local summary_date with generated_at. pending_total includes the six nonterminal submitted states, including Released and Needs Correction. completed_today_count, rejected_today_count and cancelled_today_count use closed_at in the local-midnight-to-generation interval converted to UTC. The 17:00 snapshot is not a midnight-to-midnight report.
+Staff can regenerate only the current local date. Serialize generation by the unique summary_date and record the new run and audit event. Historical snapshots remain unchanged. If no summary exists, report SUMMARY_NOT_GENERATED instead of inventing counts.
+Worker claims and retries
+Each minute, claim eligible pending jobs transactionally using a row lock and a 120-second lease. Increment attempt_count and insert a running attempt with the same attempt number before execution. Workers renew the lease every 30 seconds during long work. All completion updates verify the worker identifier and lease before committing. A stale worker cannot finalize a reclaimed job.
+[TABLE]
+Attempt | Timing after preceding failure | Outcome
+1 | Initial execution | Success completes the job; a permanent error stops immediately
+2 | 1 minute after transient failure 1 | Retry the same idempotent operation
+3 | 5 minutes after transient failure 2 | Final automatic attempt; failure becomes failed_permanently
+[/TABLE]
+
+Transient failures include temporary database connectivity, bounded worker timeouts and temporary dependency unavailability. Permanent failures include unsupported job types, invalid configuration and recipients who are not authorized to receive the event. Database outage may prevent recording the immediate failure; durable prior job state and the expired lease provide restart recovery.
+On restart, mark an expired running attempt interrupted, release the claim and requeue the job if the retry budget remains. After the budget is exhausted, set failed_permanently. Preserve every attempt. Finalization writes the notification, its unique recipient/event key, the succeeded attempt and job status in the same transaction. A uniqueness conflict for an already-delivered event is an idempotent success.
+Manual recovery and permanent failures
+T09 shows safe error codes, attempt times, outcomes and unresolved failures. Staff may retry only an allowlisted idempotent operation after entering a reason. Lock the failed job; extend max_attempts by three and retain attempt_count and all previous attempts. Permit at most two manual retry cycles, for a maximum of nine total attempts. Each cycle is audited; a running or completed job cannot be retried.
+Manual resolution requires a nonempty resolution_note and records resolved_by_user_id and resolved_at with status resolved_manually. It records that staff addressed the failure; it does not assert that the original action succeeded. A permanently failed notification must be surfaced through the monitoring query directly so failure visibility does not depend on another successful notification job. Failure-alert delivery cannot recursively create unlimited failure alerts.
+Offline recovery and missed schedules
+At startup, immediately process persisted pending work, recover expired leases and execute one aging, escalation and cleanup scan. These scans evaluate current state and do not reproduce every missed interval. If the current local date has reached 17:00 and lacks a summary, generate a delayed current-state snapshot and retain its actual generated_at. Do not reconstruct missing past-day snapshots from present data. Before 17:00, resume the normal current-day schedule.
+The scheduler cannot run while its host is offline. Continuous deployment therefore requires a persistent scheduler/worker service. A self-test job may inject a first-attempt transient error in a test environment; a separate invalid test task demonstrates permanent failure. Production does not expose failure injection endpoints.
+10 Verification and acceptance
+Acceptance scenarios
+[TABLE]
+Scenario | Required demonstration
+1. Successful request | Student submits -> Staff reviews -> Processing -> Ready -> Released -> Student acknowledges
+2. Invalid submission | Missing or invalid requirement is rejected by FastAPI
+3. Correction | Staff requests correction -> Student resubmits -> Staff reviews again
+4. Payment required | Staff reviews the test reference and receipt before approval
+5. Unauthorized action | Student attempts a staff operation and is denied
+6. Unavailable service | Student cannot submit against an inactive service
+7. Duplicate request prevention | Retrying the same successful submission does not create a second request
+8. Status notification | Status change generates a real in-app notification
+9. Aging and escalation | Controlled old request triggers the appropriate alert
+10. Daily summary | Scheduled or authorized manual execution generates actual counts
+11. Transient failure | Temporary failure is logged, retried, and recovered
+12. Permanent failure | Failure is recorded, retries stop, and staff can take action
+[/TABLE]
+
+[TABLE]
+Additional test | Pass criterion
+Concurrent staff updates | Two actions using the same row_version cannot both succeed; one receives 409 and no partial history
+Idempotency mismatch | Same key with changed normalized content returns 409 and creates no new request or revision
+Service publication race | New submission against an outdated version fails; existing requests retain the older version
+Correction clock | Due time extends exactly once by the correction interval and alert predicates update correctly
+Cross-version tampering | Foreign requirement, option, revision, correction item or receipt ID is rejected
+Historical file cleanup | Expired staging is removed while older submitted evidence remains accessible to authorized actors
+Payment isolation | Rejected payment review does not reject request; latest revision requires its own verified review before approval
+Notification deduplication | Crash or retry after delivery creates one notification per recipient/event
+Summary time boundary | Local midnight and 17:00 snapshot counts match UTC query boundaries
+Worker crash | Lease expiry records interrupted attempt and resumes eligible work without duplicate delivery
+Security | CSRF, inactive sessions, direct object access and unauthorized service publication are denied
+Responsive behavior | Forms, navigation, tables and action dialogs remain usable in phone, tablet and desktop viewports
+[/TABLE]
+
+Verification layers and evidence
+Run migrations and constraints against MySQL, not an SQLite substitute. Backend tests cover permission dependencies, typed validation, transition preconditions, transactional rollback and worker claims. API integration tests exercise actual file streaming and canonical retry behavior. Flutter tests cover the dynamic renderer and visible state restrictions; browser acceptance exercises the complete lifecycle and accessibility.
+For each scenario, retain the commit identifier, environment, safe input, expected result, observed result and supporting screenshot or sanitized log in the weekly evidence directory. Use controlled clocks and fixtures for aging, escalation and local-date boundaries. Failed scenarios remain open defects until retested; screenshots alone do not prove data integrity.
+Release acceptance
+Release acceptance requires all essential lifecycle demonstrations, authorization checks, migrations, file protection and automation recovery to pass. Verify database backup restoration and file restoration together. The OpenAPI contract, actual response models and this specification must agree. A03 and optional drafts are excluded unless their conditional implementation gates are completed.
+11 Week 13 through Week 18 delivery plan
+The following is the project delivery sequence. Week 13 preserves the agreed minimum and evidence requirements; Weeks 14-18 organize the remaining work into implementation, verification, deployment and handover milestones. Course assessment instructions remain the authority for submission dates and grading.
+Week 13 minimum implementation
+[TABLE]
+Component | Week 13 minimum | Priority
+Flutter Web project | Functional responsive browser application | Essential
+FastAPI backend | Running REST API connected to MySQL | Essential
+Database | Core tables and constraints required by implemented functionality | Essential
+Authentication | Working student and staff login with server enforced roles | Essential
+Student registration | Seeded student accounts are sufficient for the earliest workflow; add registration as soon as the core flow is stable | Secondary
+Document services | At least two predefined published services with functional requirements | Essential
+Dynamic form rendering | Flutter renders configured fields and validates submissions | Essential
+File uploads | Secure upload, validation, and attachment handling | Essential
+Submit request | Creates real database records and request revisions | Essential
+Student request tracking | Displays real statuses and history | Essential
+Staff request queue | Displays submitted requests from MySQL | Essential
+Staff review | Start review, approve, reject, and request correction | Essential
+Correction and resubmission | Student can correct evidence and return to review | Essential
+Payment verification | Manually verify evidence for a payment required test service | Essential
+Release workflow | Ready for Release -> Released -> Completed | Essential
+Status notifications | Real in-app notification creation | Essential
+Aging and escalation | Scheduled checks that identify qualifying requests | Essential
+Daily pending summary | Scheduled summary generated from real records | Essential
+Retry and failure handling | Demonstrate transient recovery and permanent failure handling | Essential
+Audit and structured logging | Records important actions and automation outcomes | Essential
+[/TABLE]
+
+Use at least two seeded published services: one without payment and one requiring manually reviewed test payment evidence. Seeded student accounts are acceptable for the earliest demonstration. The service editor can follow the core workflow, but the versioned schema and renderer must work from the beginning.
+Week 13 functional views
+[TABLE]
+Screen | Week 13 implementation
+A01 Login | Working student and staff authentication
+S01 Student Dashboard | Basic navigation, request counts, recent requests
+S02/S03 Services and Details | Service listing and requirements
+S04 Create Request | Dynamic form and file upload
+S05 Submission Confirmation | Displays successful request ID
+S06/S07 Requests and Tracking | Request history, details, and status timeline
+S08 Correct Requirements | Correction and resubmission form
+S09 Notifications | Basic notification list, even if initially linked from dashboard
+T01 Staff Dashboard | Basic pending counts and navigation
+T02/T03 Queue and Review | Working review and processing actions
+T07 Staff Notifications | New request and alert notifications
+T09 Automation Monitoring | Daily summary, alerts, retries, and failed tasks
+[/TABLE]
+
+Week 13 evidence package
+[TABLE]
+Evidence | Expected content
+Architecture diagram | Flutter Web, FastAPI, MySQL, file storage, scheduler
+Workflow diagram | Request submission through release and acknowledgement
+Automation trigger map | Events, schedules, backend tasks, failure paths
+API contract | Endpoints with request and response examples
+Trigger pattern comparison | Comparison of three contrasting office workflow trigger/execution patterns, as required by the module activity
+Source code | Working Flutter and backend project
+GitHub repository | Source code with Sir Nacorda's collaborator access, subject to his instructions
+Configuration example | Environment variable template without actual secrets
+README | Installation, setup, database migrations, and running instructions
+Failure experiment evidence | Transient and permanent failure cases
+Structured logs | Real execution records with sensitive data excluded
+Screenshots | Working system and responsive browser states
+Maintainability note | Explanation of modular backend structure and automation design
+[/TABLE]
+
+Weeks 14 through 18 milestones
+[TABLE]
+Week | Implementation focus | Exit evidence
+14 | Complete student registration, service draft editor, publication, availability controls, profiles, cancellation and remaining navigation. Keep A03 conditional. | All applicable wireframes mapped to implemented routes; version immutability, service permissions and correction history verified.
+15 | Run integration and usability testing; verify invalid transitions, uploads, retry races, responsive layouts and error handling. Fix defects. | Test matrix, passing MySQL/API checks, browser demonstrations, defect register and updated documentation.
+16 | Evaluate hosting against persistent Python, MySQL, private storage, HTTPS and scheduler requirements. Deploy the chosen test environment and exercise restart and restore. | Recorded deployment configuration, smoke tests, scheduler restart evidence, protected download tests and restore evidence.
+17 | Conduct user acceptance with controlled evidence, refine help content, resolve defects and rehearse the complete demonstration and recovery paths. | Acceptance results, issue dispositions, final interface captures and reproducible demo procedure.
+18 | Freeze the assessed release, finalize documentation, archive evidence and complete handover and presentation. | Tagged GitHub release, source and migration inventory, final documentation, demonstration recording and operational handover.
+[/TABLE]
+
+Implementation dependency order
+Establish Flutter-to-FastAPI connectivity, then accounts and sessions, versioned services and renderer, file staging and submission, staff review and correction, payment review and release, notifications, scheduled scans and summaries, and finally failure injection and recovery evidence. Complete each transaction path before polishing secondary screens.
+12 GitHub and development workflow
+Repository layout
+student-document-request-tracker/
+  frontend/                 Flutter Web app and tests
+  backend/
+    app/api/                FastAPI routes and response models
+    app/auth/               Sessions CSRF and permissions
+    app/models/             SQLAlchemy models
+    app/services/           Workflow and publication transactions
+    app/files/              Private upload and download handling
+    app/automation/         Scheduler worker and task handlers
+    migrations/             Alembic revisions
+    tests/                  MySQL integration and unit tests
+  docs/
+    architecture/
+    wireframes/
+    api/
+  evidence/
+    week13/ through week18/
+  .gitignore
+  README.md
+
+Source control and collaboration
+Keep main in a demonstrable state. Use focused branches for workflow, service configuration, automation and defects; review changes through pull requests. Each pull request explains the behavior, relevant schema change and validation performed. Tag the accepted weekly demonstration and final release so evidence can be reproduced from a known commit.
+Grant Sir Nacorda the repository collaborator access required by the course through GitHub repository settings. Do not publish invitations, personal email addresses or repository credentials in documentation or evidence. Repository visibility follows the course and institutional requirements; private evidence remains outside a public repository.
+Configuration and dependency discipline
+Commit dependency manifests and lock files, migration scripts, non-sensitive test fixtures and a documented environment-variable inventory. Exclude live .env files, session secrets, database credentials, private evidence, generated uploads, local database dumps and sensitive logs. CI credentials use GitHub secrets with minimum access. Inspect repository history before sharing if a secret was ever committed.
+[TABLE]
+Setting | Purpose and baseline
+APP_ENV | development, test or production
+DATABASE_URL | MySQL connection supplied through a secret store; no live value committed
+SESSION_COOKIE_SECURE | true in production; false only for explicit local HTTP development
+CSRF_SIGNING_KEY | Random server secret provided at runtime and rotated through controlled operations
+ALLOWED_ORIGINS | Explicit frontend origins; production uses same-origin routing where possible
+PRIVATE_STORAGE_ROOT | Absolute private evidence directory outside static assets
+REPORT_TIMEZONE | Asia/Manila
+SCHEDULER_ENABLED | Enabled only in the dedicated scheduler process
+LOG_LEVEL | Operational verbosity with secret redaction
+[/TABLE]
+
+Local setup and build sequence
+flutter doctor
+flutter pub get
+python -m venv .venv
+python -m pip install -r requirements.txt
+alembic upgrade head
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+flutter run -d chrome
+flutter analyze
+flutter test
+pytest
+flutter build web --release
+
+Run Flutter commands from frontend and Python/Alembic commands from backend with the project virtual environment active. The committed README documents the pinned SDK versions, MySQL database creation and least-privileged application account, environment setup, controlled staff/student seeding, and the dedicated scheduler entry point. The scheduler entry point is implemented in backend/app/automation and is tested independently of the web server.
+CI installs pinned dependencies, runs Flutter analysis and tests, provisions a disposable MySQL database, applies migrations and runs backend checks. Build the Flutter release bundle only after required checks pass. Publish sanitized evidence and generated API documentation against the same release commit.
+13 Deployment and operational handover
+Deployment target and selection criteria
+A small persistent Linux VPS is the reference topology: HTTPS reverse proxy, Flutter static build, FastAPI application service, MySQL, private storage and one scheduler/worker service. Hostinger VPS is a candidate rather than a selected purchase. Other VPS or managed providers qualify only if they support the selected Python runtime, persistent processes, private durable storage and MySQL access. Provider pricing, promotions and runtime support are evaluated at Week 16; they are not fixed project assumptions.
+Release procedure
+Build and test the release from a tagged commit. Record dependency versions, configuration names and required schema revisions.
+Create a least-privileged database account and persistent private storage owned by the service account. Supply runtime secrets outside source control.
+Back up MySQL and evidence consistently, stop writes for incompatible migration changes, apply Alembic migrations and start the API service.
+Serve the Flutter release build through the reverse proxy. Route /api/v1 to FastAPI and configure SPA route fallback only for frontend routes. An unknown API path must remain an API 404.
+Enable HTTPS, certificate renewal, explicit origins and secure session cookies. Limit public ports to the necessary web endpoints; keep MySQL on a private interface.
+Start the dedicated scheduler/worker under a service supervisor with restart-on-failure. Ensure only one scheduler runs across all application instances.
+Run release smoke tests: both roles, dynamic service, submission, secure file access, review, correction, payment, handover, acknowledgement, notifications and monitoring.
+Record the deployment result, release commit, schema revision and actual automation timestamps in Week 16 evidence.
+Backup and recovery
+For the classroom deployment, perform a daily encrypted database and private-file backup with a documented seven-day rolling retention. Restrict backup access and keep at least one copy off the application host. This operational default is separate from institutional retention for real student documents. Test restoration before release and after a material schema or storage change.
+Restore MySQL and the matching evidence set together into an isolated environment. Verify file hashes, attachment references, current service pointers, pending jobs and login access. Resume the scheduler only after database and storage checks pass. The prototype recovery objective is restoration from the latest daily backup; actual recovery duration is measured during rehearsal rather than assumed.
+Rollback and monitoring
+Retain the preceding compatible application build and its configuration. Prefer a forward corrective migration; do not downgrade a schema destructively after new evidence or requests have been written. For an incompatible rollback, stop writes and restore the paired database/file backup with documented data-loss implications.
+Monitor API availability, database connections, private storage capacity, backup success, last scheduler runs, overdue pending jobs and permanent failures. Structured logs contain trace_id, event type, safe entity IDs, duration and result. They exclude passwords, session or CSRF tokens, raw receipts and full sensitive answer sets. Check monitoring queries directly when notification delivery itself fails.
+Handover package
+Handover includes the release tag, configuration inventory, migration history, acceptance results and deployment and restore procedures. Transfer credentials securely. Verify the maintainer can restart services, restore backups and review failures independently.
+14 Consistency and traceability register
+Cross layer coverage
+[TABLE]
+Capability | Screens | Data and API coverage
+Access and account settings | A01-A03, S10, T10 | users/auth_sessions and auth/account routes; A03/password_reset_tokens conditional
+Service discovery and editing | S01-S04, T04-T06 | document_services, versions, requirements/options and service routes
+Submission and tracking | S04-S07, T01-T03 | document_requests, revisions, typed values, files, attachments, history and request routes
+Correction and payment | S08, T03 | correction rounds/items, payment_reviews and explicit staff/student actions
+Notifications | S09, T07 | notifications plus durable automation jobs and recipient-only routes
+Logs and operations | T08-T09 | audit_logs, runs, jobs, attempts, alerts and summaries with staff monitoring routes
+Help and navigation | S11, T11 and shared states | Frontend help content, role-aware routes and shared API errors; no extra tables
+[/TABLE]
+
+Consolidated implementation decisions
+The 23-table count includes all permanent business entities. The conditional password reset table is not counted as core. No extra payment transaction, admin, messaging or staff assignment table is introduced.
+Initial and corrected submission keys are integrated into their table definitions. Canonical payload hashes make different-payload key reuse enforceable. Draft service row_version supports concurrent editing without overwriting another manager's change.
+Job statuses include resolved_manually; attempt outcomes include running and interrupted. Retry Pending remains a display label rather than an extra stored status. Manual retry preserves cumulative attempts and audit evidence.
+Cancellation is limited to Submitted and Under Review, including when earlier general descriptions say before processing. Students cannot cancel Needs Correction under this baseline.
+Published configurations remain pinned for historical requests. New initial submissions use the current publication; correction submissions keep the original version even if the service is inactive or republished.
+Payment evidence outcomes and document request statuses are independent. The latest review is revision-specific, and corrected submissions require fresh payment review before approval.
+Aging excludes student correction waits and Released requests. pending_total still includes both because they are nonterminal. Daily summaries use a 17:00 local snapshot and actual generation time.
+The staff service detail endpoint supplies published version history; draft content remains service-manager-only. Profile avatar upload, optional student drafts and password recovery have no active initial-release API.
+The scheduler uses registered time triggers with durable business jobs in MySQL. Restart scans recover current conditions without fabricating missed historical snapshots.
+Completion checks for implementation review
+The document includes all 25 screen descriptions, 10 dialogs, 10 shared states, 23 core table definitions, the conditional recovery table, each listed API operation with inputs and success behavior, a common error catalogue and complete examples. Workflow transitions, permissions, dynamic validation, upload lifecycle, automation timing and recovery are connected to their supporting tables and screens. Chapters 10-13 define the verification, weekly evidence, repository and operational deliverables.
+Implementation reviewers must verify the release against those contracts. Design coverage is not a substitute for passing tests, an approved deployment environment or institutional authorization for real personal data.
+15 Technical references
+The uploaded project compilation and agreed technical specifications establish the product behavior in this document. The following primary technical references support implementation mechanics. Product limits, schedules and role policies are project decisions rather than requirements imposed by these libraries. References checked 30 October 2026.
+FastAPI request files
+Multipart uploads and UploadFile behavior used in Chapter 8.
+https://fastapi.tiangolo.com/tutorial/request-files/
+SQLAlchemy MySQL dialect
+MySQL/PyMySQL connection and dialect considerations used in Chapters 1 and 5.
+https://docs.sqlalchemy.org/en/20/dialects/mysql.html
+APScheduler 3.x user guide
+Scheduler triggers, job stores, coalescing and concurrency used in Chapter 9.
+https://apscheduler.readthedocs.io/en/3.x/userguide.html
+Flutter web release documentation
+Web release builds and deployment mechanics used in Chapters 12 and 13.
+https://docs.flutter.dev/deployment/web
+OWASP file upload guidance
+Layered content validation and private storage controls used in Chapter 8.
+https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html

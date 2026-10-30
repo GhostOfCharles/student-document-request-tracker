@@ -1,0 +1,14 @@
+# Week 13 maintainability evaluation
+
+The implementation separates authentication, configuration, SQLAlchemy schema, request workflow, file inspection, operations queries and automation. FastAPI owns authorization and transactions; Flutter renders published requirements and visible state. The dedicated scheduler does not live in an API startup hook. Immutable schema snapshots keep Alembic history independent of later application edits.
+
+Configuration is environment-based with a secret-free example. Generated test passwords and database credentials are ignored, private file bytes are outside static assets, and logs carry safe codes/IDs rather than authentication tokens or evidence content. File inspection runs in a subprocess with an 8-second timeout, a 5-MiB input ceiling, a 100-page PDF ceiling and image pixel limits. SQL connection/read/write and lock waits are bounded.
+
+The worker's only allowlisted delivery handler is a short local MySQL notification transaction. It performs no slow network calls or bulk work while holding a finalization lock. The 120-second lease exceeds bounded normal handler time. A renewal primitive is available for future long handlers, but this slice does not implement a long-running external handler; a future handler would need 30-second renewal during external execution and finalization with lease fencing. Restart/expired-lease recovery is verified. Production runtime scheduling/service management is outside this assignment.
+
+Operational ownership: the maintainer installs/migrates, protects configuration/private storage and runs one worker; registrar staff interpret alerts, verify fictional receipts and choose authorized retry/manual handling. A failure resolution means a human addressed the issue, not that an automatic event was delivered.
+
+Tradeoffs and limits: the root Flutter shell combines multiple views in one stateful widget and uses explicit Refresh rather than live sockets. Records are shown in bounded lists of up to 100 with search/status filters; the API supports pagination. The small-office scan/summary implementation materializes current requests, which is straightforward to inspect but has not been sized for institutional traffic. Rate limiting is process-local, suitable to the single-process local demonstration but not a distributed deployment. Structured outcomes and immutable history ease diagnosis; no formal production reliability claim follows from the bounded experiments.
+
+The source course module is still needed for independent academic-rubric confirmation. Instructor/title/backend approval, remote collaborator access, actual student data, user acceptance and production deployment are unverified. This evaluation stops at Week 13.
+

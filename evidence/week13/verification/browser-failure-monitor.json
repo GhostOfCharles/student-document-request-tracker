@@ -1,0 +1,23 @@
+[
+  {
+    "timestamp": "2026-10-30T15:33:12.931737+00:00",
+    "event": "login",
+    "account": "registrar@example.test"
+  },
+  {
+    "timestamp": "2026-10-30T15:33:13.882675+00:00",
+    "event": "screenshot",
+    "path": "screenshots/permanent-failure-attempts-desktop.png"
+  },
+  {
+    "timestamp": "2026-10-30T15:33:14.434247+00:00",
+    "event": "staff_manual_resolution",
+    "job_id": 42,
+    "status": "resolved_manually"
+  },
+  {
+    "timestamp": "2026-10-30T15:33:15.113596+00:00",
+    "event": "screenshot",
+    "path": "screenshots/manual-resolution-narrow.png"
+  }
+]

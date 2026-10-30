@@ -1,0 +1,256 @@
+{
+  "40": {
+    "job": {
+      "id": 40,
+      "automation_run_id": null,
+      "job_type": "notification",
+      "request_id": 8,
+      "recipient_user_id": 3,
+      "idempotency_key": "experiment:transient",
+      "status": "succeeded",
+      "attempt_count": 2,
+      "max_attempts": 3,
+      "next_attempt_at": "2026-10-30T15:30:02.905912Z",
+      "locked_until": null,
+      "last_error_code": null,
+      "last_error_summary": null,
+      "created_at": "2026-10-30T15:29:02.905912Z",
+      "updated_at": "2026-10-30T15:29:03.049367Z",
+      "completed_at": "2026-10-30T15:30:02.905912Z",
+      "resolved_by_user_id": null,
+      "resolved_at": null,
+      "resolution_note": null
+    },
+    "attempts": [
+      {
+        "id": 40,
+        "automation_job_id": 40,
+        "attempt_number": 1,
+        "started_at": "2026-10-30T15:29:02.905912Z",
+        "finished_at": "2026-10-30T15:29:02.905912Z",
+        "outcome": "transient_failure",
+        "error_code": "TEST_TEMPORARY_UNAVAILABLE",
+        "error_summary": "A bounded automation operation failed; staff should inspect its safe code.",
+        "duration_ms": 0
+      },
+      {
+        "id": 44,
+        "automation_job_id": 40,
+        "attempt_number": 2,
+        "started_at": "2026-10-30T15:30:02.905912Z",
+        "finished_at": "2026-10-30T15:30:02.905912Z",
+        "outcome": "succeeded",
+        "error_code": null,
+        "error_summary": null,
+        "duration_ms": 0
+      }
+    ]
+  },
+  "41": {
+    "job": {
+      "id": 41,
+      "automation_run_id": null,
+      "job_type": "notification",
+      "request_id": 8,
+      "recipient_user_id": 3,
+      "idempotency_key": "experiment:permanent",
+      "status": "resolved_manually",
+      "attempt_count": 1,
+      "max_attempts": 3,
+      "next_attempt_at": "2026-10-30T15:29:02.905912Z",
+      "locked_until": null,
+      "last_error_code": "TEST_INVALID_CONFIGURATION",
+      "last_error_summary": "A bounded automation operation failed; staff should inspect its safe code.",
+      "created_at": "2026-10-30T15:29:02.905912Z",
+      "updated_at": "2026-10-30T15:29:03.340328Z",
+      "completed_at": "2026-10-30T15:29:02.905912Z",
+      "resolved_by_user_id": 3,
+      "resolved_at": "2026-10-30T15:29:03.340303Z",
+      "resolution_note": "Synthetic configuration inspected; manual registrar handling recorded without asserting delivery."
+    },
+    "attempts": [
+      {
+        "id": 41,
+        "automation_job_id": 41,
+        "attempt_number": 1,
+        "started_at": "2026-10-30T15:29:02.905912Z",
+        "finished_at": "2026-10-30T15:29:02.905912Z",
+        "outcome": "permanent_failure",
+        "error_code": "TEST_INVALID_CONFIGURATION",
+        "error_summary": "A bounded automation operation failed; staff should inspect its safe code.",
+        "duration_ms": 0
+      }
+    ]
+  },
+  "42": {
+    "job": {
+      "id": 42,
+      "automation_run_id": null,
+      "job_type": "notification",
+      "request_id": 8,
+      "recipient_user_id": 3,
+      "idempotency_key": "experiment:ceiling",
+      "status": "failed_permanently",
+      "attempt_count": 9,
+      "max_attempts": 9,
+      "next_attempt_at": "2026-11-02T15:35:02.905912Z",
+      "locked_until": null,
+      "last_error_code": "TEST_TEMPORARY_UNAVAILABLE",
+      "last_error_summary": "A bounded automation operation failed; staff should inspect its safe code.",
+      "created_at": "2026-10-30T15:29:02.905912Z",
+      "updated_at": "2026-10-30T15:29:03.633476Z",
+      "completed_at": "2026-11-02T15:35:02.905912Z",
+      "resolved_by_user_id": null,
+      "resolved_at": null,
+      "resolution_note": null
+    },
+    "attempts": [
+      {
+        "id": 42,
+        "automation_job_id": 42,
+        "attempt_number": 1,
+        "started_at": "2026-10-30T15:29:02.905912Z",
+        "finished_at": "2026-10-30T15:29:02.905912Z",
+        "outcome": "transient_failure",
+        "error_code": "TEST_TEMPORARY_UNAVAILABLE",
+        "error_summary": "A bounded automation operation failed; staff should inspect its safe code.",
+        "duration_ms": 0
+      },
+      {
+        "id": 45,
+        "automation_job_id": 42,
+        "attempt_number": 2,
+        "started_at": "2026-10-30T15:30:02.905912Z",
+        "finished_at": "2026-10-30T15:30:02.905912Z",
+        "outcome": "transient_failure",
+        "error_code": "TEST_TEMPORARY_UNAVAILABLE",
+        "error_summary": "A bounded automation operation failed; staff should inspect its safe code.",
+        "duration_ms": 0
+      },
+      {
+        "id": 46,
+        "automation_job_id": 42,
+        "attempt_number": 3,
+        "started_at": "2026-10-30T15:35:02.905912Z",
+        "finished_at": "2026-10-30T15:35:02.905912Z",
+        "outcome": "transient_failure",
+        "error_code": "TEST_TEMPORARY_UNAVAILABLE",
+        "error_summary": "A bounded automation operation failed; staff should inspect its safe code.",
+        "duration_ms": 0
+      },
+      {
+        "id": 48,
+        "automation_job_id": 42,
+        "attempt_number": 4,
+        "started_at": "2026-11-01T15:29:02.905912Z",
+        "finished_at": "2026-11-01T15:29:02.905912Z",
+        "outcome": "transient_failure",
+        "error_code": "TEST_TEMPORARY_UNAVAILABLE",
+        "error_summary": "A bounded automation operation failed; staff should inspect its safe code.",
+        "duration_ms": 0
+      },
+      {
+        "id": 49,
+        "automation_job_id": 42,
+        "attempt_number": 5,
+        "started_at": "2026-11-01T15:30:02.905912Z",
+        "finished_at": "2026-11-01T15:30:02.905912Z",
+        "outcome": "transient_failure",
+        "error_code": "TEST_TEMPORARY_UNAVAILABLE",
+        "error_summary": "A bounded automation operation failed; staff should inspect its safe code.",
+        "duration_ms": 0
+      },
+      {
+        "id": 50,
+        "automation_job_id": 42,
+        "attempt_number": 6,
+        "started_at": "2026-11-01T15:35:02.905912Z",
+        "finished_at": "2026-11-01T15:35:02.905912Z",
+        "outcome": "transient_failure",
+        "error_code": "TEST_TEMPORARY_UNAVAILABLE",
+        "error_summary": "A bounded automation operation failed; staff should inspect its safe code.",
+        "duration_ms": 0
+      },
+      {
+        "id": 51,
+        "automation_job_id": 42,
+        "attempt_number": 7,
+        "started_at": "2026-11-02T15:29:02.905912Z",
+        "finished_at": "2026-11-02T15:29:02.905912Z",
+        "outcome": "transient_failure",
+        "error_code": "TEST_TEMPORARY_UNAVAILABLE",
+        "error_summary": "A bounded automation operation failed; staff should inspect its safe code.",
+        "duration_ms": 0
+      },
+      {
+        "id": 52,
+        "automation_job_id": 42,
+        "attempt_number": 8,
+        "started_at": "2026-11-02T15:30:02.905912Z",
+        "finished_at": "2026-11-02T15:30:02.905912Z",
+        "outcome": "transient_failure",
+        "error_code": "TEST_TEMPORARY_UNAVAILABLE",
+        "error_summary": "A bounded automation operation failed; staff should inspect its safe code.",
+        "duration_ms": 0
+      },
+      {
+        "id": 53,
+        "automation_job_id": 42,
+        "attempt_number": 9,
+        "started_at": "2026-11-02T15:35:02.905912Z",
+        "finished_at": "2026-11-02T15:35:02.905912Z",
+        "outcome": "transient_failure",
+        "error_code": "TEST_TEMPORARY_UNAVAILABLE",
+        "error_summary": "A bounded automation operation failed; staff should inspect its safe code.",
+        "duration_ms": 0
+      }
+    ]
+  },
+  "43": {
+    "job": {
+      "id": 43,
+      "automation_run_id": null,
+      "job_type": "notification",
+      "request_id": 8,
+      "recipient_user_id": 3,
+      "idempotency_key": "experiment:interrupted",
+      "status": "succeeded",
+      "attempt_count": 2,
+      "max_attempts": 3,
+      "next_attempt_at": "2026-10-30T15:35:02.905912Z",
+      "locked_until": null,
+      "last_error_code": null,
+      "last_error_summary": null,
+      "created_at": "2026-10-30T15:29:02.905912Z",
+      "updated_at": "2026-10-30T15:29:03.206469Z",
+      "completed_at": "2026-10-30T15:35:02.905912Z",
+      "resolved_by_user_id": null,
+      "resolved_at": null,
+      "resolution_note": null
+    },
+    "attempts": [
+      {
+        "id": 43,
+        "automation_job_id": 43,
+        "attempt_number": 1,
+        "started_at": "2026-10-30T15:29:02.905912Z",
+        "finished_at": "2026-10-30T15:35:02.905912Z",
+        "outcome": "interrupted",
+        "error_code": "WORKER_INTERRUPTED",
+        "error_summary": "Worker lease expired before completion.",
+        "duration_ms": 360000
+      },
+      {
+        "id": 47,
+        "automation_job_id": 43,
+        "attempt_number": 2,
+        "started_at": "2026-10-30T15:35:02.905912Z",
+        "finished_at": "2026-10-30T15:35:02.905912Z",
+        "outcome": "succeeded",
+        "error_code": null,
+        "error_summary": null,
+        "duration_ms": 0
+      }
+    ]
+  }
+}

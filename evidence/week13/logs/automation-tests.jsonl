@@ -1,0 +1,109 @@
+{"attempt": 1, "event": "claimed", "job_id": 1, "timestamp": "2026-10-30T15:28:53.725103Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 1, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:28:53.745637Z"}
+{"attempt": 1, "event": "claimed", "job_id": 2, "timestamp": "2026-10-30T15:28:53.755780Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 2, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:28:53.770856Z"}
+{"attempt": 1, "event": "claimed", "job_id": 3, "timestamp": "2026-10-30T15:28:53.780370Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 3, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:28:53.796219Z"}
+{"attempt": 1, "event": "claimed", "job_id": 4, "timestamp": "2026-10-30T15:28:53.805100Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 4, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:28:53.819186Z"}
+{"attempt": 1, "event": "claimed", "job_id": 5, "timestamp": "2026-10-30T15:28:53.828007Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 5, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:28:53.841642Z"}
+{"attempt": 1, "event": "claimed", "job_id": 6, "timestamp": "2026-10-30T15:28:53.851038Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 6, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:28:53.864930Z"}
+{"attempt": 1, "event": "claimed", "job_id": 7, "timestamp": "2026-10-30T15:28:53.873748Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 7, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:28:53.888760Z"}
+{"attempt": 1, "event": "claimed", "job_id": 8, "timestamp": "2026-10-30T15:28:53.898691Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 8, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:28:53.911812Z"}
+{"attempt": 1, "event": "claimed", "job_id": 9, "timestamp": "2026-10-30T15:28:53.921161Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 9, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:28:53.935278Z"}
+{"attempt": 1, "event": "claimed", "job_id": 10, "timestamp": "2026-10-30T15:28:53.943585Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 10, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:28:53.956971Z"}
+{"attempt": 1, "event": "claimed", "job_id": 11, "timestamp": "2026-10-30T15:28:53.980611Z"}
+{"attempt": 1, "error_code": "RECIPIENT_UNAUTHORIZED", "event": "attempt_finished", "job_id": 11, "job_status": "failed_permanently", "outcome": "permanent_failure", "timestamp": "2026-10-30T15:28:53.997228Z"}
+{"attempt": 1, "event": "claimed", "job_id": 12, "timestamp": "2026-10-30T15:28:54.005816Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 12, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:28:54.026558Z"}
+{"event": "scan_completed", "records_scanned": 7, "run_id": 1, "tasks_created": 2, "timestamp": "2026-10-30T15:29:00.479162Z"}
+{"event": "scan_completed", "records_scanned": 7, "run_id": 2, "tasks_created": 0, "timestamp": "2026-10-30T15:29:00.520581Z"}
+{"attempt": 1, "event": "claimed", "job_id": 13, "timestamp": "2026-10-30T15:29:00.530077Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 13, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:00.544308Z"}
+{"attempt": 1, "event": "claimed", "job_id": 14, "timestamp": "2026-10-30T15:29:00.553616Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 14, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:00.568457Z"}
+{"attempt": 1, "event": "claimed", "job_id": 15, "timestamp": "2026-10-30T15:29:00.579777Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 15, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:00.595977Z"}
+{"attempt": 1, "event": "claimed", "job_id": 16, "timestamp": "2026-10-30T15:29:00.604977Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 16, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:00.619136Z"}
+{"attempt": 1, "event": "claimed", "job_id": 17, "timestamp": "2026-10-30T15:29:00.629084Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 17, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:00.643827Z"}
+{"attempt": 1, "event": "claimed", "job_id": 18, "timestamp": "2026-10-30T15:29:00.652571Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 18, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:00.666465Z"}
+{"attempt": 1, "event": "claimed", "job_id": 19, "timestamp": "2026-10-30T15:29:00.675442Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 19, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:00.688664Z"}
+{"attempt": 1, "event": "claimed", "job_id": 20, "timestamp": "2026-10-30T15:29:00.697519Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 20, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:00.710877Z"}
+{"attempt": 1, "event": "claimed", "job_id": 21, "timestamp": "2026-10-30T15:29:00.719838Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 21, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:00.733391Z"}
+{"attempt": 1, "event": "claimed", "job_id": 22, "timestamp": "2026-10-30T15:29:00.742445Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 22, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:00.755429Z"}
+{"attempt": 1, "event": "claimed", "job_id": 23, "timestamp": "2026-10-30T15:29:00.768683Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 23, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:00.782580Z"}
+{"attempt": 1, "event": "claimed", "job_id": 24, "timestamp": "2026-10-30T15:29:00.792924Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 24, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:00.806959Z"}
+{"attempt": 1, "event": "claimed", "job_id": 25, "timestamp": "2026-10-30T15:29:00.815593Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 25, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:00.829192Z"}
+{"attempt": 1, "event": "claimed", "job_id": 26, "timestamp": "2026-10-30T15:29:00.837354Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 26, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:00.851420Z"}
+{"attempt": 1, "event": "claimed", "job_id": 27, "timestamp": "2026-10-30T15:29:00.861052Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 27, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:00.874046Z"}
+{"attempt": 1, "event": "claimed", "job_id": 28, "timestamp": "2026-10-30T15:29:00.883238Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 28, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:00.897095Z"}
+{"attempt": 1, "event": "claimed", "job_id": 29, "timestamp": "2026-10-30T15:29:00.905389Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 29, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:00.919440Z"}
+{"attempt": 1, "event": "claimed", "job_id": 30, "timestamp": "2026-10-30T15:29:00.928746Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 30, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:00.942030Z"}
+{"attempt": 1, "event": "claimed", "job_id": 31, "timestamp": "2026-10-30T15:29:00.951148Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 31, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:00.964717Z"}
+{"attempt": 1, "event": "claimed", "job_id": 32, "timestamp": "2026-10-30T15:29:00.972927Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 32, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:00.986486Z"}
+{"attempt": 1, "event": "claimed", "job_id": 33, "timestamp": "2026-10-30T15:29:00.995344Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 33, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:01.009066Z"}
+{"attempt": 1, "event": "claimed", "job_id": 34, "timestamp": "2026-10-30T15:29:01.017619Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 34, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:01.031838Z"}
+{"attempt": 1, "event": "claimed", "job_id": 35, "timestamp": "2026-10-30T15:29:01.041832Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 35, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:01.055368Z"}
+{"attempt": 1, "event": "claimed", "job_id": 36, "timestamp": "2026-10-30T15:29:02.782596Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 36, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:02.806924Z"}
+{"attempt": 1, "event": "claimed", "job_id": 37, "timestamp": "2026-10-30T15:29:02.818992Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 37, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:02.842110Z"}
+{"attempt": 1, "event": "claimed", "job_id": 38, "timestamp": "2026-10-30T15:29:02.853412Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 38, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:02.869481Z"}
+{"attempt": 1, "event": "claimed", "job_id": 39, "timestamp": "2026-10-30T15:29:02.879528Z"}
+{"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 39, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:02.895760Z"}
+{"attempt": 1, "event": "claimed", "job_id": 40, "timestamp": "2026-10-30T15:29:02.929837Z"}
+{"attempt": 1, "error_code": "TEST_TEMPORARY_UNAVAILABLE", "event": "attempt_finished", "job_id": 40, "job_status": "pending", "outcome": "transient_failure", "timestamp": "2026-10-30T15:29:02.941022Z"}
+{"attempt": 1, "event": "claimed", "job_id": 41, "timestamp": "2026-10-30T15:29:02.952381Z"}
+{"attempt": 1, "error_code": "TEST_INVALID_CONFIGURATION", "event": "attempt_finished", "job_id": 41, "job_status": "failed_permanently", "outcome": "permanent_failure", "timestamp": "2026-10-30T15:29:02.971050Z"}
+{"attempt": 1, "event": "claimed", "job_id": 42, "timestamp": "2026-10-30T15:29:02.983386Z"}
+{"attempt": 1, "error_code": "TEST_TEMPORARY_UNAVAILABLE", "event": "attempt_finished", "job_id": 42, "job_status": "pending", "outcome": "transient_failure", "timestamp": "2026-10-30T15:29:02.995994Z"}
+{"attempt": 1, "event": "claimed", "job_id": 43, "timestamp": "2026-10-30T15:29:03.009322Z"}
+{"attempt": 2, "event": "claimed", "job_id": 40, "timestamp": "2026-10-30T15:29:03.022075Z"}
+{"attempt": 2, "error_code": null, "event": "attempt_finished", "job_id": 40, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:03.052686Z"}
+{"attempt": 2, "event": "claimed", "job_id": 42, "timestamp": "2026-10-30T15:29:03.069245Z"}
+{"attempt": 2, "error_code": "TEST_TEMPORARY_UNAVAILABLE", "event": "attempt_finished", "job_id": 42, "job_status": "pending", "outcome": "transient_failure", "timestamp": "2026-10-30T15:29:03.080507Z"}
+{"attempt": 1, "event": "lease_recovered", "job_id": 43, "terminal": false, "timestamp": "2026-10-30T15:29:03.108655Z"}
+{"attempt": 3, "event": "claimed", "job_id": 42, "timestamp": "2026-10-30T15:29:03.116916Z"}
+{"attempt": 3, "error_code": "TEST_TEMPORARY_UNAVAILABLE", "event": "attempt_finished", "job_id": 42, "job_status": "failed_permanently", "outcome": "transient_failure", "timestamp": "2026-10-30T15:29:03.139786Z"}
+{"attempt": 2, "event": "claimed", "job_id": 43, "timestamp": "2026-10-30T15:29:03.184468Z"}
+{"attempt": 2, "error_code": null, "event": "attempt_finished", "job_id": 43, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-10-30T15:29:03.208918Z"}
+{"event": "stale_finalization_rejected", "job_id": 43, "timestamp": "2026-10-30T15:29:03.224663Z"}
+{"attempt": 4, "event": "claimed", "job_id": 42, "timestamp": "2026-10-30T15:29:03.426143Z"}
+{"attempt": 4, "error_code": "TEST_TEMPORARY_UNAVAILABLE", "event": "attempt_finished", "job_id": 42, "job_status": "pending", "outcome": "transient_failure", "timestamp": "2026-10-30T15:29:03.437934Z"}
+{"attempt": 5, "event": "claimed", "job_id": 42, "timestamp": "2026-10-30T15:29:03.459112Z"}
+{"attempt": 5, "error_code": "TEST_TEMPORARY_UNAVAILABLE", "event": "attempt_finished", "job_id": 42, "job_status": "pending", "outcome": "transient_failure", "timestamp": "2026-10-30T15:29:03.476283Z"}
+{"attempt": 6, "event": "claimed", "job_id": 42, "timestamp": "2026-10-30T15:29:03.501024Z"}
+{"attempt": 6, "error_code": "TEST_TEMPORARY_UNAVAILABLE", "event": "attempt_finished", "job_id": 42, "job_status": "failed_permanently", "outcome": "transient_failure", "timestamp": "2026-10-30T15:29:03.527446Z"}
+{"attempt": 7, "event": "claimed", "job_id": 42, "timestamp": "2026-10-30T15:29:03.577266Z"}
+{"attempt": 7, "error_code": "TEST_TEMPORARY_UNAVAILABLE", "event": "attempt_finished", "job_id": 42, "job_status": "pending", "outcome": "transient_failure", "timestamp": "2026-10-30T15:29:03.586870Z"}
+{"attempt": 8, "event": "claimed", "job_id": 42, "timestamp": "2026-10-30T15:29:03.601917Z"}
+{"attempt": 8, "error_code": "TEST_TEMPORARY_UNAVAILABLE", "event": "attempt_finished", "job_id": 42, "job_status": "pending", "outcome": "transient_failure", "timestamp": "2026-10-30T15:29:03.611495Z"}
+{"attempt": 9, "event": "claimed", "job_id": 42, "timestamp": "2026-10-30T15:29:03.625683Z"}
+{"attempt": 9, "error_code": "TEST_TEMPORARY_UNAVAILABLE", "event": "attempt_finished", "job_id": 42, "job_status": "failed_permanently", "outcome": "transient_failure", "timestamp": "2026-10-30T15:29:03.638885Z"}
