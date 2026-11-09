@@ -1,6 +1,8 @@
-# Student Document Request Tracker — Week 13 SA7
+# Student Document Request Tracker — development prototype
 
 Working Flutter Web + FastAPI + MySQL development prototype for Advanced Automation and Scripting. All accounts and evidence are synthetic. See evidence/week13/README.md for verified results and the acceptance boundary. The instructor Module 13 DOCX was not found locally; independent module/rubric confirmation is blocked. Instructor project/title and FastAPI approval are unverified.
+
+Week 14 development adds a registrar service draft editor, publishing and availability controls, development-only student registration, and account settings. See docs/week14-development.md for the current status. ULS is the reference institution; the example requirements, payment settings, and processing estimates are not confirmed ULS policy. No live student data or institutional connection is in use.
 
 ## Requirements
 
@@ -89,6 +91,17 @@ Use localhost consistently so same-site development cookies work. The configured
 
 Certificate of Good Moral version 1 has no payment. Certificate of Enrollment version 1 requires a fictional reference, separate fictional receipt and supporting evidence. Both versions include server-configured text/select/date/checkbox/file requirements. Payment is manual evidence review; no money is collected.
 
+To enable service management for the controlled registrar account and create two **unpublished, provisional** example drafts, run once from the repository root:
+
+~~~powershell
+$env:PYTHONPATH = 'backend'
+& backend/.venv/Scripts/python.exe -m app.provision_week14_demo
+~~~
+
+The command only accepts a local development database, preserves existing services and passwords, and never publishes the examples. Sign out and back in after changing the registrar's permission. Open **Services** as the registrar to edit, save, preview and publish a draft. Example processing times and unpaid settings are placeholders, not confirmed ULS rules.
+
+The login page also offers development-only student registration. A student number entered there is not checked against a school roster. Self-registration is disabled outside the development/test environments until an institution-approved identity process is available.
+
 ## Repeatable demonstration
 
 1. Sign in as the first student. Inspect the actual dashboard and two published services. Open a service's configured requirements, then Create request.
@@ -122,4 +135,4 @@ See docs/api-contract.md, docs/architecture/week13.md, docs/implementation-decis
 
 The implementation is local. Review git log and the Week 13 report for the verified local commit. Create a private remote only under the user's/instructor's directions, push the reviewed source, and invite Sir Nacorda using his verified GitHub username and course instructions. Do not include .env, .private, database files or tool binaries. No invitation acceptance is claimed.
 
-Weeks 14–18 are not implemented or assessed by this assignment. Stop at the Week 13 report.
+Week 14 development has begun; the earlier Week 13 report remains a historical record. Weeks 15–18 have not been assessed or deployed here.

@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'platform.dart';
 
 import 'api.dart';
+import 'design_system.dart';
 import 'requirements_form.dart';
+import 'service_management.dart';
+import 'account_pages.dart';
 
 void main() => runApp(const TrackerApp());
 String label(dynamic value) => value
@@ -19,14 +22,7 @@ class TrackerApp extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
     title: 'Student Document Request Tracker',
     debugShowCheckedModeBanner: false,
-    theme: ThemeData(
-      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff255d69)),
-      useMaterial3: true,
-      inputDecorationTheme: const InputDecorationTheme(
-        border: OutlineInputBorder(),
-      ),
-      cardTheme: const CardThemeData(margin: EdgeInsets.only(bottom: 12)),
-    ),
+    theme: StudentTheme.data,
     home: TrackerHome(api: api),
   );
 }
@@ -58,6 +54,8 @@ class _TrackerHomeState extends State<TrackerHome> {
   final loginForm = GlobalKey<FormState>();
   String statusFilter = '';
   String jobsFilter = '';
+  bool rememberMe = false;
+  bool showLoginPassword = false;
   bool get staff => actor?['role'] == 'staff';
 
   @override
@@ -78,7 +76,7 @@ class _TrackerHomeState extends State<TrackerHome> {
   Future<void> restore() async {
     try {
       actor = await api.call('GET', '/auth/me');
-      await load();
+      if (actor?['must_change_password'] != true) await load();
     } catch (e) {
       if (e is ApiError && e.status != 401) error = e.toString();
     } finally {
@@ -97,7 +95,9 @@ class _TrackerHomeState extends State<TrackerHome> {
       if (mounted) {
         setState(() {
           error = e.toString();
-          if (e is ApiError && e.status == 401) {
+          if (e is ApiError &&
+              e.status == 401 &&
+              e.code == 'AUTHENTICATION_REQUIRED') {
             actor = null;
             screen = 'Dashboard';
             data = null;
@@ -115,29 +115,76 @@ class _TrackerHomeState extends State<TrackerHome> {
     actor = await api.call('POST', '/auth/login', {
       'login': login.text.trim(),
       'password': password.text,
-      'remember_me': false,
+      'remember_me': rememberMe,
     });
     password.clear();
     await api.token();
     screen = 'Dashboard';
-    await load();
+    if (actor?['must_change_password'] != true) await load();
   });
 
-  Future<bool> confirm(String title, String content) async =>
+  Future<void> registerAccount() async {
+    final created = await Navigator.of(context)
+        .push<bool>(MaterialPageRoute(builder: (_) => RegisterPage(api: api)));
+    if (created == true && mounted) {
+      setState(() {
+        error = null;
+        success = 'Account created. Sign in with your student number or email.';
+      });
+    }
+  }
+
+  Future<void> openAccount() async {
+    final result = await Navigator.of(context).push<Json>(
+      MaterialPageRoute(
+        builder: (_) => AccountPage(api: api, actor: actor!),
+      ),
+    );
+    if (!mounted) return;
+    if (result?['signed_out'] == true) {
+      setState(() {
+        actor = null;
+        data = null;
+        screen = 'Dashboard';
+        success = 'Password changed. Sign in again.';
+      });
+    } else {
+      await run(() async {
+        actor = await api.call('GET', '/auth/me');
+        await load();
+      });
+    }
+  }
+
+  Future<bool> confirm(
+    String title,
+    String content, {
+    bool destructive = false,
+  }) async =>
       await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
           title: Text(title),
           content: Text(content),
           actions: [
-            TextButton(
+            OutlinedButton(
               onPressed: () => Navigator.pop(ctx, false),
               child: const Text('Go back'),
             ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Confirm'),
-            ),
+            destructive
+                ? StudentActionButton(
+                    label: title.toLowerCase().contains('cancel')
+                        ? 'Confirm cancellation'
+                        : title.toLowerCase().contains('reject')
+                        ? 'Confirm rejection'
+                        : 'Confirm action',
+                    kind: StudentActionKind.destructive,
+                    onPressed: () => Navigator.pop(ctx, true),
+                  )
+                : FilledButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Confirm'),
+                  ),
           ],
         ),
       ) ??
@@ -167,7 +214,7 @@ class _TrackerHomeState extends State<TrackerHome> {
           ),
         ),
         actions: [
-          TextButton(
+          OutlinedButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Go back'),
           ),
@@ -189,7 +236,10 @@ class _TrackerHomeState extends State<TrackerHome> {
       case 'Dashboard':
         data = await api.call('GET', '/dashboard');
       case 'Services':
-        data = await api.call('GET', '/services');
+        data = await api.call(
+          'GET',
+          staff ? '/staff/services?page_size=100' : '/services',
+        );
       case 'Requests':
         data = await api.call(
           'GET',
@@ -267,9 +317,11 @@ class _TrackerHomeState extends State<TrackerHome> {
 
   Future<void> workflow(String action, {Json extras = const {}}) async {
     if (busy) return;
+    final destructive = action == 'reject' || action == 'cancel';
     if (!await confirm(
       label(action.replaceAll('-', ' ')),
       'Confirm this action for ${selected!['request_number']}? Reload if another user changed the record.',
+      destructive: destructive,
     )) {
       return;
     }
@@ -292,24 +344,42 @@ class _TrackerHomeState extends State<TrackerHome> {
     final fields = detail['service']['version']['requirements'] as List;
     final target = await showDialog<String>(
       context: context,
-      builder: (ctx) => SimpleDialog(
+      builder: (ctx) => AlertDialog(
         title: const Text('Choose correction target'),
-        children: [
-          for (final field in fields)
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(ctx, 'requirement:${field['id']}'),
-              child: Text(field['label']),
+        content: SizedBox(
+          width: StudentDialogWidth.of(ctx),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final field in fields)
+                  ListTile(
+                    leading: const Icon(Icons.edit_note_rounded),
+                    title: Text(field['label']),
+                    onTap: () =>
+                        Navigator.pop(ctx, 'requirement:${field['id']}'),
+                  ),
+                if (detail['service']['version']['payment']['reference_required'])
+                  ListTile(
+                    leading: const Icon(Icons.receipt_long_outlined),
+                    title: const Text('Payment reference'),
+                    onTap: () => Navigator.pop(ctx, 'payment_reference'),
+                  ),
+                if (detail['service']['version']['payment']['receipt_required'])
+                  ListTile(
+                    leading: const Icon(Icons.attach_file_rounded),
+                    title: const Text('Payment receipt'),
+                    onTap: () => Navigator.pop(ctx, 'payment_receipt'),
+                  ),
+              ],
             ),
-          if (detail['service']['version']['payment']['reference_required'])
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(ctx, 'payment_reference'),
-              child: const Text('Payment reference'),
-            ),
-          if (detail['service']['version']['payment']['receipt_required'])
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(ctx, 'payment_receipt'),
-              child: const Text('Payment receipt'),
-            ),
+          ),
+        ),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
         ],
       ),
     );
@@ -337,20 +407,37 @@ class _TrackerHomeState extends State<TrackerHome> {
   Widget requestCards(List items) => Column(
     children: [
       if (items.isEmpty)
-        const Padding(
-          padding: EdgeInsets.all(24),
-          child: Text('No requests yet.'),
+        StudentEmptyState(
+          title: staff ? 'No requests yet' : 'No requests yet',
+          message: staff
+              ? 'New document requests will appear in this queue.'
+              : 'Your submitted document requests will appear here.',
         ),
       for (final item in items)
-        Card(
-          child: ListTile(
-            title: Text(item['request_number']),
-            subtitle: Text(
-              '${item['service_name'] ?? ''}\n${label(item['status'])} • due ${item['due_at']}',
+        Padding(
+          padding: const EdgeInsets.only(bottom: StudentSpace.itemGap),
+          child: StudentSectionCard(
+            padding: const EdgeInsets.symmetric(
+              horizontal: StudentSpace.medium,
+              vertical: StudentSpace.tight,
             ),
-            isThreeLine: true,
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => openRequest(item['id']),
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(item['request_number']),
+              subtitle: Text(
+                '${item['service_name'] ?? ''}\nDue ${item['due_at']}',
+              ),
+              isThreeLine: true,
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  StudentStatusBadge(status: item['status']),
+                  const SizedBox(width: StudentSpace.tight),
+                  const Icon(Icons.chevron_right_rounded),
+                ],
+              ),
+              onTap: () => openRequest(item['id']),
+            ),
           ),
         ),
     ],
@@ -358,37 +445,172 @@ class _TrackerHomeState extends State<TrackerHome> {
 
   Widget dashboard() {
     final counts = data['counts'] as Json;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          staff ? 'Registrar overview' : 'Your request overview',
-          style: Theme.of(context).textTheme.headlineSmall,
+    if (!staff) {
+      final cards = <Widget>[
+        for (final state in [
+          'submitted',
+          'under_review',
+          'needs_correction',
+          'processing',
+          'ready_for_release',
+          'released',
+          'completed',
+          'rejected',
+          'cancelled',
+        ])
+          StudentStatCard(
+            label: label(state),
+            value: '${counts[state] ?? 0}',
+            icon: switch (state) {
+              'completed' => Icons.check_circle_outline,
+              'rejected' || 'cancelled' => Icons.cancel_outlined,
+              'needs_correction' => Icons.edit_note_rounded,
+              'processing' ||
+              'ready_for_release' ||
+              'released' => Icons.autorenew_rounded,
+              _ => Icons.pending_actions_rounded,
+            },
+            color: switch (state) {
+              'completed' => StudentColors.green,
+              'rejected' || 'cancelled' => StudentColors.red,
+              'needs_correction' => StudentColors.amber,
+              _ => StudentColors.primary,
+            },
+            tint: switch (state) {
+              'completed' => StudentColors.greenTint,
+              'rejected' || 'cancelled' => StudentColors.redTint,
+              'needs_correction' => StudentColors.amberTint,
+              _ => StudentColors.blueTint,
+            },
+          ),
+        StudentStatCard(
+          label: 'Unread notifications',
+          value: '${data['unread_notifications']}',
+          icon: Icons.notifications_none_rounded,
+          color: StudentColors.purple,
+          tint: StudentColors.purpleTint,
         ),
-        const Text('Week 13 development prototype • synthetic records only'),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            for (final entry in counts.entries)
-              Chip(label: Text('${label(entry.key)}: ${entry.value}')),
-            Chip(
-              label: Text(
-                'Unread notifications: ${data['unread_notifications']}',
-              ),
+      ];
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const StudentPageHeader(
+            title: 'Your request overview',
+            subtitle: 'Track your document requests and their latest status.',
+          ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final columns = constraints.maxWidth >= 1000
+                  ? 4
+                  : constraints.maxWidth >= 650
+                  ? 2
+                  : 1;
+              const gap = StudentSpace.itemGap;
+              final width =
+                  (constraints.maxWidth - (columns - 1) * gap) / columns;
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  for (final card in cards) SizedBox(width: width, child: card),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: StudentSpace.sectionGap),
+          StudentSectionCard(
+            title: 'Recent requests',
+            icon: Icons.history_rounded,
+            action: TextButton(
+              onPressed: () => navigate('Requests'),
+              child: const Text('View all'),
             ),
-            if (staff)
-              Chip(
-                label: Text(
-                  'Permanent failures: ${data['failed_automation_jobs']}',
-                ),
-              ),
-          ],
+            child: requestCards(data['recent_requests']),
+          ),
+        ],
+      );
+    }
+    final statCards = <Widget>[
+      for (final state in [
+        'submitted',
+        'under_review',
+        'needs_correction',
+        'processing',
+        'ready_for_release',
+        'released',
+        'completed',
+        'rejected',
+        'cancelled',
+      ])
+        StudentStatCard(
+          label: label(state),
+          value: '${counts[state] ?? 0}',
+          icon: Icons.pending_actions_rounded,
+          color: state == 'completed'
+              ? StudentColors.green
+              : ['rejected', 'cancelled'].contains(state)
+              ? StudentColors.red
+              : state == 'needs_correction'
+              ? StudentColors.amber
+              : StudentColors.primary,
+          tint: state == 'completed'
+              ? StudentColors.greenTint
+              : ['rejected', 'cancelled'].contains(state)
+              ? StudentColors.redTint
+              : state == 'needs_correction'
+              ? StudentColors.amberTint
+              : StudentColors.blueTint,
         ),
-        const SizedBox(height: 24),
-        Text('Recent requests', style: Theme.of(context).textTheme.titleLarge),
-        requestCards(data['recent_requests']),
+      StudentStatCard(
+        label: 'Unread notifications',
+        value: '${data['unread_notifications']}',
+        icon: Icons.notifications_none_rounded,
+      ),
+      StudentStatCard(
+        label: 'Permanent automation failures',
+        value: '${data['failed_automation_jobs']}',
+        icon: Icons.warning_amber_rounded,
+        color: StudentColors.red,
+        tint: StudentColors.redTint,
+      ),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const StudentPageHeader(
+          title: 'Registrar overview',
+          subtitle: 'Request counts and recent activity.',
+        ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final columns = constraints.maxWidth >= 1100
+                ? 4
+                : constraints.maxWidth >= 640
+                ? 2
+                : 1;
+            final width =
+                (constraints.maxWidth - (columns - 1) * StudentSpace.itemGap) /
+                columns;
+            return Wrap(
+              spacing: StudentSpace.itemGap,
+              runSpacing: StudentSpace.itemGap,
+              children: [
+                for (final card in statCards)
+                  SizedBox(width: width, child: card),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: StudentSpace.sectionGap),
+        StudentSectionCard(
+          title: 'Recent requests',
+          icon: Icons.history_rounded,
+          action: TextButton(
+            onPressed: () => navigate('Requests'),
+            child: const Text('View queue'),
+          ),
+          child: requestCards(data['recent_requests']),
+        ),
       ],
     );
   }
@@ -402,7 +624,7 @@ class _TrackerHomeState extends State<TrackerHome> {
       builder: (ctx) => AlertDialog(
         title: Text(v['name']),
         content: SizedBox(
-          width: 500,
+          width: StudentDialogWidth.of(ctx),
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -415,7 +637,7 @@ class _TrackerHomeState extends State<TrackerHome> {
                 ),
                 Text(
                   v['payment']['required']
-                      ? 'Fictional evidence: ${v['payment']['currency']} ${v['payment']['amount']}'
+                      ? 'Payment evidence: ${v['payment']['currency']} ${v['payment']['amount']}'
                       : 'No payment required',
                 ),
                 for (final field in v['requirements'])
@@ -432,7 +654,7 @@ class _TrackerHomeState extends State<TrackerHome> {
           ),
         ),
         actions: [
-          TextButton(
+          OutlinedButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: const Text('Close'),
           ),
@@ -452,29 +674,126 @@ class _TrackerHomeState extends State<TrackerHome> {
     }
   });
 
-  Widget services() => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        'Published document services',
-        style: Theme.of(context).textTheme.headlineSmall,
-      ),
-      const SizedBox(height: 16),
-      if (data['items'].isEmpty) const Text('No active published services.'),
-      for (final item in data['items'])
-        Card(
-          child: ListTile(
-            title: Text(item['name']),
-            subtitle: Text(
-              '${item['description']}\n${item['processing_days']} days • ${item['payment_required'] ? 'Fictional payment evidence' : 'No payment'}',
-            ),
-            isThreeLine: true,
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => serviceDetails(item['id']),
+  Widget services() {
+    if (!staff) {
+      final items = data['items'] as List;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const StudentPageHeader(
+            title: 'Document services',
+            subtitle: 'Choose a service to review its requirements and submit a request.',
           ),
+          if (items.isEmpty)
+            const StudentSectionCard(
+              child: StudentEmptyState(
+                title: 'No services available',
+                message: 'Published document services will appear here.',
+              ),
+            ),
+          for (final item in items)
+            Padding(
+              padding: const EdgeInsets.only(bottom: StudentSpace.itemGap),
+              child: StudentSectionCard(
+                child: Row(
+                  children: [
+                    Container(
+                      width: StudentSize.serviceIcon,
+                      height: StudentSize.serviceIcon,
+                      decoration: BoxDecoration(
+                        color: StudentColors.blueTint,
+                        borderRadius: BorderRadius.circular(
+                          StudentRadius.control,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.description_outlined,
+                        color: StudentColors.primary,
+                      ),
+                    ),
+                    const SizedBox(width: StudentSpace.compact),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item['name'],
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: StudentSpace.micro + 1),
+                          Text(
+                            item['description'] ?? '',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          const SizedBox(height: StudentSpace.tight + 1),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: [
+                              StudentStatusBadge(
+                                status: item['payment_required']
+                                    ? 'payment_evidence'
+                                    : 'no_payment',
+                              ),
+                              Text(
+                                '${item['processing_days']} processing days',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: StudentSpace.itemGap),
+                    IconButton(
+                      tooltip: 'View ${item['name']} requirements',
+                      onPressed: () => serviceDetails(item['id']),
+                      icon: const Icon(Icons.arrow_forward_rounded),
+                      color: StudentColors.primary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const StudentPageHeader(
+          title: 'Published document services',
+          subtitle: 'Read-only catalog of active service versions.',
         ),
-    ],
-  );
+        StudentSectionCard(
+          title: 'Service catalog',
+          icon: Icons.folder_open_outlined,
+          child: data['items'].isEmpty
+              ? const StudentEmptyState(
+                  title: 'No active services',
+                  message: 'No published document services are available.',
+                )
+              : Column(
+                  children: [
+                    for (final item in data['items'])
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.description_outlined),
+                        title: Text(item['name']),
+                        subtitle: Text(
+                          '${item['description']}\n${item['processing_days']} days ? ${item['payment_required'] ? 'Payment evidence' : 'No payment'}',
+                        ),
+                        isThreeLine: true,
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => serviceDetails(item['id']),
+                      ),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+
   Widget fileButton(Json? file) => file == null
       ? const SizedBox.shrink()
       : TextButton.icon(
@@ -512,9 +831,7 @@ class _TrackerHomeState extends State<TrackerHome> {
         for (final attachment in revision['attachments'])
           fileButton(attachment['file']),
         if (version['payment']['required']) ...[
-          Text(
-            'Fictional payment reference: ${revision['payment']['reference']}',
-          ),
+          Text('Payment reference: ${revision['payment']['reference']}'),
           fileButton(revision['payment']['receipt']),
         ],
       ],
@@ -529,17 +846,29 @@ class _TrackerHomeState extends State<TrackerHome> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          req['request_number'],
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
-        Text(
-          '${version['name']} • pinned version ${version['version_number']}',
-        ),
-        Text(
-          '${label(state)} • revision ${req['current_revision_number']} • row version ${req['row_version']}',
-        ),
-        Text('Due ${req['due_at']}'),
+        if (!staff) ...[
+          Text(
+            'Current revision ${req['current_revision_number']}',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Pinned service version ${version['version_number']} • due ${req['due_at']}',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ] else ...[
+          Text(
+            req['request_number'],
+            style: Theme.of(context).textTheme.headlineMedium,
+          ),
+          Text(
+            '${version['name']} • pinned version ${version['version_number']}',
+          ),
+          Text(
+            '${label(state)} • revision ${req['current_revision_number']} • row version ${req['row_version']}',
+          ),
+          Text('Due ${req['due_at']}'),
+        ],
         if (staff)
           Text(
             'Student: ${req['student']['full_name']} (${req['student']['student_number']})',
@@ -562,9 +891,10 @@ class _TrackerHomeState extends State<TrackerHome> {
           runSpacing: 8,
           children: [
             if (staff && state == 'submitted')
-              FilledButton(
+              StudentActionButton(
+                loading: busy,
+                label: 'Begin review',
                 onPressed: () => workflow('begin-review'),
-                child: const Text('Begin review'),
               ),
             if (staff && state == 'under_review') ...[
               if (version['payment']['required'])
@@ -573,7 +903,14 @@ class _TrackerHomeState extends State<TrackerHome> {
                   'needs_correction',
                   'rejected',
                 ])
-                  OutlinedButton(
+                  StudentActionButton(
+                    loading: busy,
+                    kind: outcome == 'rejected'
+                        ? StudentActionKind.destructive
+                        : outcome == 'needs_correction'
+                        ? StudentActionKind.secondary
+                        : StudentActionKind.primary,
+                    label: 'Payment: ${label(outcome)}',
                     onPressed: () async {
                       String? note;
                       if (outcome != 'verified') {
@@ -589,42 +926,46 @@ class _TrackerHomeState extends State<TrackerHome> {
                         },
                       );
                     },
-                    child: Text('Payment: ${label(outcome)}'),
                   ),
-              FilledButton(
+              StudentActionButton(
+                loading: busy,
+                label: 'Approve requirements',
                 onPressed: () => workflow(
                   'approve',
                   extras: {'confirm_requirements_valid': true},
                 ),
-                child: const Text('Approve requirements'),
               ),
-              OutlinedButton(
+              StudentActionButton(
+                kind: StudentActionKind.secondary,
+                label: 'Request correction',
                 onPressed: correctionDialog,
-                child: const Text('Request correction'),
               ),
-              OutlinedButton(
+              StudentActionButton(
+                kind: StudentActionKind.destructive,
+                label: 'Reject request',
                 onPressed: () async {
                   final reason = await prompt('Reject request');
                   if (reason != null) {
                     await workflow('reject', extras: {'reason': reason});
                   }
                 },
-                child: const Text('Reject request'),
               ),
             ],
             if (staff && state == 'processing')
-              FilledButton(
+              StudentActionButton(
+                loading: busy,
+                label: 'Mark ready for release',
                 onPressed: () => workflow(
                   'ready-for-release',
                   extras: {'confirm_prepared': true},
                 ),
-                child: const Text('Mark ready for release'),
               ),
             if (staff && state == 'ready_for_release')
-              FilledButton(
+              StudentActionButton(
+                loading: busy,
+                label: 'Confirm actual handover',
                 onPressed: () =>
                     workflow('release', extras: {'confirm_handover': true}),
-                child: const Text('Confirm actual handover'),
               ),
             if (!staff && state == 'released')
               FilledButton(
@@ -708,13 +1049,13 @@ class _TrackerHomeState extends State<TrackerHome> {
                     builder: (ctx) => AlertDialog(
                       title: Text('Revision ${rev['revision_number']}'),
                       content: SizedBox(
-                        width: 600,
+                        width: StudentDialogWidth.of(ctx),
                         child: SingleChildScrollView(
                           child: revisionContent(old, version),
                         ),
                       ),
                       actions: [
-                        TextButton(
+                        OutlinedButton(
                           onPressed: () => Navigator.pop(ctx),
                           child: const Text('Close'),
                         ),
@@ -741,42 +1082,145 @@ class _TrackerHomeState extends State<TrackerHome> {
   }
 
   Widget notifications() => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      Text('Notifications', style: Theme.of(context).textTheme.headlineSmall),
-      TextButton(
-        onPressed: () => run(() async {
-          await api.call('POST', '/notifications/read-all');
-          await load();
-        }),
-        child: const Text('Mark all read'),
+      StudentPageHeader(
+        title: 'Staff notifications',
+        subtitle: 'Request updates and operational alerts.',
+        trailing: StudentActionButton(
+          label: 'Mark all read',
+          kind: StudentActionKind.secondary,
+          loading: busy,
+          onPressed: data['items'].isEmpty
+              ? null
+              : () => run(() async {
+                  await api.call('POST', '/notifications/read-all');
+                  await load();
+                }),
+          icon: Icons.done_all_rounded,
+        ),
       ),
-      if (data['items'].isEmpty)
-        const Text(
-          'No notifications yet. The dedicated worker delivers queued events.',
+      StudentSectionCard(
+        title: 'Recent updates',
+        icon: Icons.notifications_none_rounded,
+        child: data['items'].isEmpty
+            ? const StudentEmptyState(
+                title: 'No notifications',
+                message:
+                    'The dedicated worker delivers queued request updates.',
+              )
+            : Column(
+                children: [
+                  for (final n in data['items'])
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: CircleAvatar(
+                        backgroundColor: n['read_at'] == null
+                            ? StudentColors.blueTint
+                            : StudentColors.background,
+                        child: Icon(
+                          n['read_at'] == null
+                              ? Icons.mark_email_unread_outlined
+                              : Icons.mark_email_read_outlined,
+                          color: n['read_at'] == null
+                              ? StudentColors.primary
+                              : StudentColors.muted,
+                        ),
+                      ),
+                      title: Text(n['title']),
+                      subtitle: Text('${n['message']}\n${n['created_at']}'),
+                      isThreeLine: true,
+                      onTap: () => run(() async {
+                        await api.call(
+                          'PATCH',
+                          '/notifications/${n['id']}/read',
+                        );
+                        if (n['request_id'] != null) {
+                          screen = 'Detail';
+                          await fetchDetail(n['request_id']);
+                        } else {
+                          await load();
+                        }
+                      }),
+                    ),
+                ],
+              ),
+      ),
+    ],
+  );
+
+  Widget studentNotifications() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      StudentPageHeader(
+        title: 'Notifications',
+        subtitle: 'Updates about your requests and document services.',
+        trailing: TextButton.icon(
+          onPressed: data['items'].isEmpty
+              ? null
+              : () => run(() async {
+                  await api.call('POST', '/notifications/read-all');
+                  await load();
+                }),
+          icon: const Icon(Icons.done_all_rounded),
+          label: const Text('Mark all read'),
         ),
-      for (final n in data['items'])
-        Card(
-          child: ListTile(
-            leading: Icon(
-              n['read_at'] == null
-                  ? Icons.mark_email_unread
-                  : Icons.mark_email_read,
-            ),
-            title: Text(n['title']),
-            subtitle: Text('${n['message']}\n${n['created_at']}'),
-            isThreeLine: true,
-            onTap: () => run(() async {
-              await api.call('PATCH', '/notifications/${n['id']}/read');
-              if (n['request_id'] != null) {
-                screen = 'Detail';
-                await fetchDetail(n['request_id']);
-              } else {
-                await load();
-              }
-            }),
-          ),
-        ),
+      ),
+      StudentSectionCard(
+        title: 'Recent updates',
+        icon: Icons.notifications_none_rounded,
+        child: data['items'].isEmpty
+            ? const StudentEmptyState(
+                title: 'You are all caught up',
+                message: 'New request updates will appear here.',
+                icon: Icons.notifications_none_rounded,
+              )
+            : Column(
+                children: [
+                  for (final n in data['items'])
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: CircleAvatar(
+                        backgroundColor: n['read_at'] == null
+                            ? StudentColors.blueTint
+                            : StudentColors.background,
+                        child: Icon(
+                          n['read_at'] == null
+                              ? Icons.mark_email_unread_outlined
+                              : Icons.mark_email_read_outlined,
+                          color: n['read_at'] == null
+                              ? StudentColors.primary
+                              : StudentColors.muted,
+                        ),
+                      ),
+                      title: Text(
+                        n['title'],
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text('${n['message']}\n${n['created_at']}'),
+                      ),
+                      isThreeLine: true,
+                      onTap: () => run(() async {
+                        await api.call(
+                          'PATCH',
+                          '/notifications/${n['id']}/read',
+                        );
+                        if (n['request_id'] != null) {
+                          screen = 'Detail';
+                          await fetchDetail(n['request_id']);
+                        } else if (n['service_id'] != null) {
+                          screen = 'Services';
+                          await load();
+                        } else {
+                          await load();
+                        }
+                      }),
+                    ),
+                ],
+              ),
+      ),
     ],
   );
 
@@ -788,7 +1232,7 @@ class _TrackerHomeState extends State<TrackerHome> {
       builder: (ctx) => AlertDialog(
         title: Text('Job $id • ${label(job['status'])}'),
         content: SizedBox(
-          width: 600,
+          width: StudentDialogWidth.of(ctx),
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -815,19 +1259,20 @@ class _TrackerHomeState extends State<TrackerHome> {
           ),
         ),
         actions: [
-          TextButton(
+          OutlinedButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Close'),
           ),
           if (job['status'] == 'failed_permanently') ...[
             if (job['job_type'] == 'notification' && job['max_attempts'] < 9)
-              TextButton(
+              OutlinedButton(
                 onPressed: () => Navigator.pop(ctx, 'retry'),
                 child: const Text('Retry safely'),
               ),
-            FilledButton(
+            StudentActionButton(
+              kind: StudentActionKind.destructive,
+              label: 'Record manual handling',
               onPressed: () => Navigator.pop(ctx, 'resolve'),
-              child: const Text('Record manual handling'),
             ),
           ],
         ],
@@ -848,133 +1293,244 @@ class _TrackerHomeState extends State<TrackerHome> {
   });
 
   Widget automation() => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      Text(
-        'Automation monitoring',
-        style: Theme.of(context).textTheme.headlineSmall,
+      const StudentPageHeader(
+        title: 'Automation monitoring',
+        subtitle:
+            'Durable schedule runs, queued work, alerts and recovery actions.',
       ),
-      const Text(
-        'Permanent failures are queried directly. Manual handling does not claim delivery succeeded.',
-      ),
-      const SizedBox(height: 16),
-      Text(
-        'Daily pending summary',
-        style: Theme.of(context).textTheme.titleLarge,
-      ),
-      if (data['summary'] == null)
-        const Text('SUMMARY_NOT_GENERATED: no stored snapshot for today.')
-      else ...[
-        Text(
-          'Asia/Manila date ${data['summary']['summary_date']} • generated ${data['summary']['generated_at']}',
+      StudentSectionCard(
+        title: 'Daily pending summary',
+        icon: Icons.summarize_outlined,
+        action: StudentActionButton(
+          label: 'Regenerate current local date',
+          kind: StudentActionKind.secondary,
+          loading: busy,
+          icon: Icons.refresh_rounded,
+          onPressed: busy
+              ? null
+              : () => run(() async {
+                  final now = DateTime.now()
+                      .toUtc()
+                      .add(const Duration(hours: 8))
+                      .toIso8601String()
+                      .substring(0, 10);
+                  await api.call('POST', '/staff/reports/daily/regenerate', {
+                    'date': now,
+                  });
+                  await load();
+                }),
         ),
-        Wrap(
-          spacing: 8,
+        child: data['summary'] == null
+            ? const StudentEmptyState(
+                title: 'Summary not generated',
+                message: 'No stored snapshot is available for today.',
+                icon: Icons.summarize_outlined,
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Asia/Manila date ${data['summary']['summary_date']} ? generated ${data['summary']['generated_at']}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: StudentSpace.itemGap),
+                  Wrap(
+                    spacing: StudentSpace.tight,
+                    runSpacing: StudentSpace.tight,
+                    children: [
+                      for (final key in [
+                        'submitted_count',
+                        'under_review_count',
+                        'needs_correction_count',
+                        'processing_count',
+                        'ready_for_release_count',
+                        'released_count',
+                        'pending_total',
+                        'completed_today_count',
+                        'rejected_today_count',
+                        'cancelled_today_count',
+                        'aging_count',
+                        'escalated_count',
+                      ])
+                        Chip(
+                          label: Text('${label(key)}: ${data['summary'][key]}'),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+      ),
+      const SizedBox(height: StudentSpace.sectionGap),
+      StudentSectionCard(
+        title: 'Open alerts',
+        icon: Icons.notifications_active_outlined,
+        child: data['alerts'].isEmpty
+            ? const StudentEmptyState(
+                title: 'No open alerts',
+                message: 'Aging and stalled requests will appear here.',
+              )
+            : Column(
+                children: [
+                  for (final alert in data['alerts'])
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: StudentStatusBadge(status: alert['alert_type']),
+                      title: Text('Request ${alert['request_id']}'),
+                      subtitle: Text('Triggered ${alert['triggered_at']}'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => openRequest(alert['request_id']),
+                    ),
+                ],
+              ),
+      ),
+      const SizedBox(height: StudentSpace.sectionGap),
+      StudentSectionCard(
+        title: 'Durable jobs',
+        icon: Icons.work_history_outlined,
+        child: Column(
           children: [
-            for (final key in [
-              'submitted_count',
-              'under_review_count',
-              'needs_correction_count',
-              'processing_count',
-              'ready_for_release_count',
-              'released_count',
-              'pending_total',
-              'completed_today_count',
-              'rejected_today_count',
-              'cancelled_today_count',
-              'aging_count',
-              'escalated_count',
-            ])
-              Chip(label: Text('${label(key)}: ${data['summary'][key]}')),
+            StudentFilterBar(
+              children: [
+                DropdownButtonFormField<String>(
+                  initialValue: jobsFilter,
+                  decoration: const InputDecoration(labelText: 'Job status'),
+                  items: [
+                    for (final status in [
+                      '',
+                      'pending',
+                      'running',
+                      'succeeded',
+                      'failed_permanently',
+                      'resolved_manually',
+                    ])
+                      DropdownMenuItem(
+                        value: status,
+                        child: Text(
+                          status.isEmpty ? 'All job states' : label(status),
+                        ),
+                      ),
+                  ],
+                  onChanged: busy
+                      ? null
+                      : (value) {
+                          jobsFilter = value!;
+                          run(load);
+                        },
+                ),
+              ],
+            ),
+            const SizedBox(height: StudentSpace.itemGap),
+            if (data['jobs'].isEmpty)
+              const StudentEmptyState(
+                title: 'No matching jobs',
+                message: 'Durable automation jobs will be listed here.',
+                icon: Icons.work_history_outlined,
+              )
+            else
+              for (final job in data['jobs'])
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text('Job ${job['id']} ? ${job['job_type']}'),
+                  subtitle: Text(
+                    'Attempts ${job['attempt_count']}/${job['max_attempts']} ? ${job['last_error_code'] ?? 'No failure recorded'}',
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      StudentStatusBadge(status: job['status']),
+                      const SizedBox(width: StudentSpace.tight),
+                      const Icon(Icons.chevron_right),
+                    ],
+                  ),
+                  onTap: () => jobDialog(job['id']),
+                ),
           ],
         ),
-      ],
-      OutlinedButton(
-        onPressed: () => run(() async {
-          final now = DateTime.now()
-              .toUtc()
-              .add(const Duration(hours: 8))
-              .toIso8601String()
-              .substring(0, 10);
-          await api.call('POST', '/staff/reports/daily/regenerate', {
-            'date': now,
-          });
-          await load();
-        }),
-        child: const Text('Regenerate current local date'),
       ),
-      const Divider(),
-      Text('Open alerts', style: Theme.of(context).textTheme.titleLarge),
-      if (data['alerts'].isEmpty) const Text('No open alerts.'),
-      for (final alert in data['alerts'])
-        ListTile(
-          title: Text(
-            '${label(alert['alert_type'])} • request ${alert['request_id']}',
-          ),
-          subtitle: Text(alert['triggered_at']),
-          onTap: () => openRequest(alert['request_id']),
-        ),
-      const Divider(),
-      Text('Durable jobs', style: Theme.of(context).textTheme.titleLarge),
-      DropdownButton<String>(
-        value: jobsFilter,
-        isExpanded: true,
-        items: [
-          for (final status in [
-            '',
-            'pending',
-            'running',
-            'succeeded',
-            'failed_permanently',
-            'resolved_manually',
-          ])
-            DropdownMenuItem(
-              value: status,
-              child: Text(status.isEmpty ? 'All job states' : label(status)),
-            ),
-        ],
-        onChanged: (value) {
-          jobsFilter = value!;
-          run(load);
-        },
+      const SizedBox(height: StudentSpace.sectionGap),
+      StudentSectionCard(
+        title: 'Schedule runs',
+        icon: Icons.schedule_rounded,
+        child: data['runs'].isEmpty
+            ? const StudentEmptyState(
+                title: 'No schedule runs yet',
+                message: 'Completed worker runs will appear here.',
+                icon: Icons.schedule_rounded,
+              )
+            : Column(
+                children: [
+                  for (final item in data['runs'])
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(item['job_name']),
+                      subtitle: Text(
+                        '${item['started_at']} ? scanned ${item['records_scanned']} ? tasks ${item['tasks_created']} ? ${item['error_code'] ?? ''}',
+                      ),
+                      trailing: StudentStatusBadge(status: item['status']),
+                    ),
+                ],
+              ),
       ),
-      if (data['jobs'].isEmpty) const Text('No matching jobs.'),
-      for (final job in data['jobs'])
-        Card(
-          child: ListTile(
-            title: Text('Job ${job['id']}: ${label(job['status'])}'),
-            subtitle: Text(
-              '${job['job_type']} • attempts ${job['attempt_count']}/${job['max_attempts']}\n${job['last_error_code'] ?? ''}',
-            ),
-            onTap: () => jobDialog(job['id']),
-          ),
-        ),
-      const Divider(),
-      Text('Schedule runs', style: Theme.of(context).textTheme.titleLarge),
-      for (final r in data['runs'])
-        ListTile(
-          title: Text('${r['job_name']}: ${r['status']}'),
-          subtitle: Text(
-            '${r['started_at']} • scanned ${r['records_scanned']} • tasks ${r['tasks_created']} ${r['error_code'] ?? ''}',
-          ),
-        ),
-      const Divider(),
-      Text(
-        'Sanitized activity log',
-        style: Theme.of(context).textTheme.titleLarge,
+      const SizedBox(height: StudentSpace.sectionGap),
+      StudentSectionCard(
+        title: 'Sanitized activity log',
+        icon: Icons.receipt_long_outlined,
+        child: data['audits'].isEmpty
+            ? const StudentEmptyState(
+                title: 'No activity recorded',
+                message:
+                    'Sanitized staff automation activity will appear here.',
+                icon: Icons.receipt_long_outlined,
+              )
+            : Column(
+                children: [
+                  for (final entry in data['audits'])
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('${entry['action']} ? ${entry['result']}'),
+                      subtitle: Text(
+                        '${entry['created_at']} ? ${entry['target_type']} ${entry['target_id'] ?? ''}',
+                      ),
+                    ),
+                ],
+              ),
       ),
-      for (final entry in data['audits'])
-        ListTile(
-          title: Text('${entry['action']} • ${entry['result']}'),
-          subtitle: Text(
-            '${entry['created_at']} • ${entry['target_type']} ${entry['target_id'] ?? ''}',
-          ),
-        ),
     ],
   );
 
   Widget content() {
     if (screen == 'Form') {
+      if (!staff) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            StudentPageHeader(
+              title: service!['version']['name'],
+              subtitle: formRequest == null
+                  ? 'Complete the service requirements below.'
+                  : 'Review the requested changes and resubmit your correction.',
+            ),
+            StudentSectionCard(
+              icon: formRequest == null
+                  ? Icons.add_task_rounded
+                  : Icons.edit_note_rounded,
+              child: RequirementsForm(
+                key: ValueKey('${service!['id']}-${formRequest?['id']}'),
+                api: api,
+                service: service!,
+                request: formRequest,
+                onSubmitted: (result) {
+                  success =
+                      'Submission confirmed: ${result['request_number']} • revision ${result['revision_number']}';
+                  openRequest(result['id']);
+                },
+              ),
+            ),
+          ],
+        );
+      }
       return RequirementsForm(
         key: ValueKey('${service!['id']}-${formRequest?['id']}'),
         api: api,
@@ -988,64 +1544,197 @@ class _TrackerHomeState extends State<TrackerHome> {
       );
     }
     if (data == null && screen != 'Detail') {
-      return const Text('Use Retry to load this view.');
+      return staff
+          ? const Text('Use Retry to load this view.')
+          : const SizedBox.shrink();
     }
     switch (screen) {
       case 'Services':
-        return services();
+        return staff
+            ? ServiceManagement(
+                api: api,
+                actor: actor!,
+                listing: data,
+                onRefresh: () => run(load),
+              )
+            : services();
       case 'Detail':
-        return selected == null ? const Text('Request unavailable.') : detail();
-      case 'Requests':
+        if (staff) {
+          return selected == null
+              ? const StudentEmptyState(
+                  title: 'Request unavailable',
+                  message: 'Return to the request queue and select a request.',
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    StudentPageHeader(
+                      title: selected!['request_number'],
+                      subtitle:
+                          '${selected!['service']['version']['name']} • registrar review',
+                      trailing: StudentStatusBadge(status: selected!['status']),
+                    ),
+                    StudentSectionCard(
+                      title: 'Request review',
+                      icon: Icons.fact_check_outlined,
+                      child: detail(),
+                    ),
+                  ],
+                );
+        }
+        if (selected == null) {
+          return const StudentEmptyState(
+            title: 'Request unavailable',
+            message: 'Return to My requests and select a request to view it.',
+          );
+        }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              staff ? 'Registrar request queue' : 'My requests',
-              style: Theme.of(context).textTheme.headlineSmall,
+            StudentPageHeader(
+              title: selected!['request_number'],
+              subtitle:
+                  '${selected!['service']['version']['name']} • request details',
+              trailing: StudentStatusBadge(status: selected!['status']),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: search,
-              decoration: InputDecoration(
-                labelText: 'Tracking number',
-                suffixIcon: IconButton(
-                  onPressed: () => run(load),
-                  icon: const Icon(Icons.search),
+            StudentSectionCard(
+              title: 'Request details',
+              icon: Icons.description_outlined,
+              child: detail(),
+            ),
+          ],
+        );
+      case 'Requests':
+        if (!staff) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const StudentPageHeader(
+                title: 'My requests',
+                subtitle: 'Find a request by its tracking number or filter by status.',
+              ),
+              StudentSectionCard(
+                title: 'Request history',
+                icon: Icons.receipt_long_outlined,
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: search,
+                      decoration: InputDecoration(
+                        labelText: 'Tracking number',
+                        suffixIcon: IconButton(
+                          tooltip: 'Search requests',
+                          onPressed: () => run(load),
+                          icon: const Icon(Icons.search_rounded),
+                        ),
+                      ),
+                      onSubmitted: (_) => run(load),
+                    ),
+                    const SizedBox(height: StudentSpace.itemGap),
+                    DropdownButtonFormField<String>(
+                      initialValue: statusFilter,
+                      decoration: const InputDecoration(labelText: 'Status'),
+                      items: [
+                        for (final state in [
+                          '',
+                          'submitted',
+                          'under_review',
+                          'needs_correction',
+                          'processing',
+                          'ready_for_release',
+                          'released',
+                          'completed',
+                          'rejected',
+                          'cancelled',
+                        ])
+                          DropdownMenuItem(
+                            value: state,
+                            child: Text(
+                              state.isEmpty ? 'All statuses' : label(state),
+                            ),
+                          ),
+                      ],
+                      onChanged: (value) {
+                        statusFilter = value!;
+                        run(load);
+                      },
+                    ),
+                    const SizedBox(height: StudentSpace.itemGap),
+                    requestCards(data['items']),
+                  ],
                 ),
               ),
-              onSubmitted: (_) => run(load),
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const StudentPageHeader(
+              title: 'Registrar request queue',
+              subtitle: 'Search and filter requests awaiting registrar action.',
             ),
-            DropdownButton<String>(
-              value: statusFilter,
-              isExpanded: true,
-              items: [
-                for (final state in [
-                  '',
-                  'submitted',
-                  'under_review',
-                  'needs_correction',
-                  'processing',
-                  'ready_for_release',
-                  'released',
-                  'completed',
-                  'rejected',
-                  'cancelled',
-                ])
-                  DropdownMenuItem(
-                    value: state,
-                    child: Text(state.isEmpty ? 'All statuses' : label(state)),
+            StudentSectionCard(
+              title: 'Request queue',
+              icon: Icons.inbox_outlined,
+              child: Column(
+                children: [
+                  StudentFilterBar(
+                    children: [
+                      TextField(
+                        controller: search,
+                        decoration: InputDecoration(
+                          labelText: 'Tracking number',
+                          prefixIcon: const Icon(Icons.search_rounded),
+                          suffixIcon: IconButton(
+                            tooltip: 'Search requests',
+                            onPressed: busy ? null : () => run(load),
+                            icon: const Icon(Icons.search_rounded),
+                          ),
+                        ),
+                        onSubmitted: (_) => run(load),
+                      ),
+                      DropdownButtonFormField<String>(
+                        initialValue: statusFilter,
+                        decoration: const InputDecoration(labelText: 'Status'),
+                        items: [
+                          for (final state in [
+                            '',
+                            'submitted',
+                            'under_review',
+                            'needs_correction',
+                            'processing',
+                            'ready_for_release',
+                            'released',
+                            'completed',
+                            'rejected',
+                            'cancelled',
+                          ])
+                            DropdownMenuItem(
+                              value: state,
+                              child: Text(
+                                state.isEmpty ? 'All statuses' : label(state),
+                              ),
+                            ),
+                        ],
+                        onChanged: busy
+                            ? null
+                            : (value) {
+                                statusFilter = value!;
+                                run(load);
+                              },
+                      ),
+                    ],
                   ),
-              ],
-              onChanged: (value) {
-                statusFilter = value!;
-                run(load);
-              },
+                  const SizedBox(height: StudentSpace.sectionGap),
+                  requestCards(data['items']),
+                ],
+              ),
             ),
-            requestCards(data['items']),
           ],
         );
       case 'Notifications':
-        return notifications();
+        return staff ? notifications() : studentNotifications();
       case 'Automation':
         return automation();
       default:
@@ -1053,67 +1742,245 @@ class _TrackerHomeState extends State<TrackerHome> {
     }
   }
 
+  Future<void> searchStudentRequests(String query) async {
+    search.text = query;
+    if (screen == 'Requests') {
+      await run(load);
+    } else {
+      await navigate('Requests');
+    }
+  }
+
+  Future<void> signOut() async {
+    if (busy ||
+        !await confirm('Sign out?', 'Leave this development session?')) {
+      return;
+    }
+    await run(() async {
+      await api.call('POST', '/auth/logout');
+      actor = null;
+      data = null;
+      selected = null;
+      screen = 'Dashboard';
+      api.csrf = null;
+    });
+  }
+
+  Widget studentWorkspace() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      if (success != null)
+        Container(
+          margin: const EdgeInsets.only(bottom: StudentSpace.sectionGap),
+          padding: const EdgeInsets.all(StudentSpace.compact),
+          decoration: BoxDecoration(
+            color: StudentColors.greenTint,
+            borderRadius: BorderRadius.circular(StudentRadius.control),
+          ),
+          child: Semantics(
+            liveRegion: true,
+            child: Text(
+              success!,
+              style: const TextStyle(
+                color: StudentColors.green,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      if (error != null && !busy)
+        Padding(
+          padding: const EdgeInsets.only(bottom: StudentSpace.sectionGap),
+          child: StudentErrorState(message: error!, onRetry: () => run(load)),
+        ),
+      if (busy && data == null && screen != 'Form')
+        const StudentLoadingState()
+      else
+        content(),
+    ],
+  );
+
+  Widget staffWorkspace() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      if (success != null)
+        StudentSectionCard(
+          padding: const EdgeInsets.all(StudentSpace.medium),
+          child: Semantics(
+            liveRegion: true,
+            child: Text(
+              success!,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: StudentColors.green,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      if (error != null && !busy)
+        Padding(
+          padding: const EdgeInsets.only(bottom: StudentSpace.sectionGap),
+          child: StudentErrorState(message: error!, onRetry: () => run(load)),
+        ),
+      if (busy && data == null && screen != 'Detail')
+        const StudentLoadingState()
+      else
+        content(),
+    ],
+  );
+
   @override
   Widget build(BuildContext context) {
+    if (actor?['must_change_password'] == true) {
+      return AccountPage(
+        api: api,
+        actor: actor!,
+        forcePasswordChange: true,
+        onSignOut: signOut,
+        onSignedOut: () => setState(() {
+          actor = null;
+          data = null;
+          screen = 'Dashboard';
+          success = 'Password changed. Sign in again.';
+        }),
+      );
+    }
     if (actor == null) {
-      return Scaffold(
-        body: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: Form(
-                key: loginForm,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.school_outlined, size: 52),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Student Document Request Tracker',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                    const Text('Week 13 • synthetic development accounts'),
-                    const SizedBox(height: 24),
-                    TextFormField(
-                      controller: login,
-                      decoration: const InputDecoration(
-                        labelText: 'Email or student number',
-                      ),
-                      autofillHints: const [AutofillHints.username],
-                      validator: (v) =>
-                          (v ?? '').trim().isEmpty ? 'Enter your login.' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: password,
-                      obscureText: true,
-                      decoration: const InputDecoration(labelText: 'Password'),
-                      autofillHints: const [AutofillHints.password],
-                      onFieldSubmitted: (_) {
-                        if (!busy) signIn();
-                      },
-                      validator: (v) =>
-                          (v ?? '').isEmpty ? 'Enter your password.' : null,
-                    ),
-                    if (error != null)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Text(
-                          error!,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
+      return Theme(
+        data: StudentTheme.data,
+        child: Scaffold(
+          backgroundColor: StudentColors.background,
+          body: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(StudentSpace.page - 4),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: StudentSize.loginCardWidth,
+                ),
+                child: StudentSectionCard(
+                  padding: const EdgeInsets.all(StudentSpace.loginCard),
+                  child: Form(
+                    key: loginForm,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: StudentSize.loginLogo,
+                            height: StudentSize.loginLogo,
+                            decoration: BoxDecoration(
+                              color: StudentColors.primary,
+                              borderRadius: BorderRadius.circular(
+                                StudentRadius.loginLogo,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.school_rounded,
+                              size: StudentSize.loginLogo / 2,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
-                      ),
-                    const SizedBox(height: 16),
-                    if (busy) const LinearProgressIndicator(),
-                    FilledButton(
-                      onPressed: busy ? null : signIn,
-                      child: const Text('Sign in'),
+                        const SizedBox(height: StudentSpace.sectionGap),
+                        Text(
+                          'Student Document Request Tracker',
+                          textAlign: TextAlign.center,
+                          style: StudentTheme.data.textTheme.headlineSmall,
+                        ),
+                        const SizedBox(height: 7),
+                        const Text(
+                          'Development environment • test accounts',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: StudentColors.muted),
+                        ),
+                        const SizedBox(height: StudentSpace.page),
+                        TextFormField(
+                          controller: login,
+                          decoration: const InputDecoration(
+                            labelText: 'Email or student number',
+                            prefixIcon: Icon(Icons.person_outline_rounded),
+                          ),
+                          autofillHints: const [AutofillHints.username],
+                          validator: (v) => (v ?? '').trim().isEmpty
+                              ? 'Enter your login.'
+                              : null,
+                        ),
+                        const SizedBox(height: StudentSpace.compact + 1),
+                        TextFormField(
+                          controller: password,
+                          obscureText: !showLoginPassword,
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            prefixIcon: const Icon(Icons.lock_outline_rounded),
+                            suffixIcon: IconButton(
+                              tooltip: showLoginPassword
+                                  ? 'Hide password'
+                                  : 'Show password',
+                              onPressed: () => setState(
+                                () => showLoginPassword = !showLoginPassword,
+                              ),
+                              icon: Icon(
+                                showLoginPassword
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                              ),
+                            ),
+                          ),
+                          autofillHints: const [AutofillHints.password],
+                          onFieldSubmitted: (_) {
+                            if (!busy) signIn();
+                          },
+                          validator: (v) =>
+                              (v ?? '').isEmpty ? 'Enter your password.' : null,
+                        ),
+                        CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Remember me'),
+                          value: rememberMe,
+                          onChanged: busy
+                              ? null
+                              : (value) =>
+                                    setState(() => rememberMe = value ?? false),
+                        ),
+                        if (error != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: Semantics(
+                              liveRegion: true,
+                              child: Text(
+                                error!,
+                                style: const TextStyle(
+                                  color: StudentColors.red,
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (success != null)
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              top: StudentSpace.itemGap,
+                            ),
+                            child: Text(
+                              success!,
+                              style: const TextStyle(
+                                color: StudentColors.green,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: StudentSpace.sectionGap),
+                        if (busy) const LinearProgressIndicator(),
+                        FilledButton(
+                          onPressed: busy ? null : signIn,
+                          child: const Text('Sign in'),
+                        ),
+                        TextButton(
+                          onPressed: busy ? null : registerAccount,
+                          child: const Text('Create student account'),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -1121,135 +1988,62 @@ class _TrackerHomeState extends State<TrackerHome> {
         ),
       );
     }
-    final destinations = [
-      'Dashboard',
-      'Services',
-      'Requests',
-      'Notifications',
-      if (staff) 'Automation',
-    ];
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Document requests'),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh current view',
-            onPressed: busy ? null : () => run(load),
-            icon: const Icon(Icons.refresh),
-          ),
-          IconButton(
-            tooltip: 'Sign out',
-            onPressed: busy
-                ? null
-                : () async {
-                    if (await confirm(
-                      'Sign out?',
-                      'Leave this development session?',
-                    )) {
-                      await run(() async {
-                        await api.call('POST', '/auth/logout');
-                        actor = null;
-                        data = null;
-                        selected = null;
-                        screen = 'Dashboard';
-                        api.csrf = null;
-                      });
-                    }
-                  },
-            icon: const Icon(Icons.logout),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Material(
-            color: Theme.of(context).colorScheme.surfaceContainerLow,
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('${actor!['full_name']} • ${label(actor!['role'])}'),
-                  Wrap(
-                    spacing: 4,
-                    runSpacing: 4,
-                    children: [
-                      for (final destination in destinations)
-                        TextButton(
-                          onPressed: busy ? null : () => navigate(destination),
-                          child: Text(
-                            destination,
-                            style: TextStyle(
-                              fontWeight: screen == destination
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (busy) const LinearProgressIndicator(),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.all(
-                MediaQuery.sizeOf(context).width < 600 ? 16 : 32,
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1000),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (success != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Semantics(
-                            liveRegion: true,
-                            child: Text(
-                              success!,
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                        ),
-                      if (error != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Semantics(
-                                liveRegion: true,
-                                child: Text(
-                                  error!,
-                                  style: TextStyle(
-                                    color: Theme.of(context).colorScheme.error,
-                                  ),
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: busy ? null : () => run(load),
-                                child: const Text(
-                                  'Retry / reload current state',
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      if (!busy || data != null || screen == 'Form') content(),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    if (!staff) {
+      final active = screen == 'Detail' || screen == 'Form'
+          ? 'Requests'
+          : screen;
+      final unread = data is Json
+          ? (data['unread_notifications'] as int? ?? 0)
+          : 0;
+      return StudentAppShell(
+        selected: active,
+        userName: actor!['full_name'],
+        unreadCount: unread,
+        busy: busy,
+        searchController: search,
+        onSearch: searchStudentRequests,
+        onNavigate: (destination) {
+          if (!busy) navigate(destination);
+        },
+        onRefresh: () {
+          if (!busy) run(load);
+        },
+        onSignOut: signOut,
+        onProfile: openAccount,
+        child: studentWorkspace(),
+      );
+    }
+    final selected = screen == 'Detail' || screen == 'Form'
+        ? 'Requests'
+        : screen;
+    return StudentAppShell(
+      selected: selected,
+      userName: actor!['full_name'],
+      unreadCount: data is Json
+          ? (data['unread_notifications'] as int? ?? 0)
+          : 0,
+      busy: busy,
+      searchController: search,
+      onSearch: searchStudentRequests,
+      onNavigate: (destination) {
+        if (!busy) navigate(destination);
+      },
+      onRefresh: () {
+        if (!busy) run(load);
+      },
+      onSignOut: signOut,
+      onProfile: openAccount,
+      brandName: 'Registrar Desk',
+      menuLabel: 'STAFF MENU',
+      searchHint: 'Search by tracking number...',
+      navigationItems: const [
+        ('Dashboard', Icons.grid_view_rounded),
+        ('Services', Icons.folder_open_outlined),
+        ('Requests', Icons.description_outlined),
+        ('Notifications', Icons.notifications_none_rounded),
+        ('Automation', Icons.auto_awesome_outlined),
+      ],
+      child: staffWorkspace(),
     );
   }
 }

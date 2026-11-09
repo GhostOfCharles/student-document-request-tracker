@@ -50,4 +50,19 @@ A paid service additionally supplies payment.reference and payment.receipt_file_
 
 Errors use {code,detail,field_errors,trace_id}; no SQL, file path or secret is returned. Important statuses: 201 new resource; 200 read/action/replay; 204 logout/deletion; 401 authentication/credentials; 403 permission/CSRF; 404 inaccessible resource/missing summary; 409 workflow/concurrency/idempotency/payment; 413 file size; 415 file type; 422 validation; 429 login throttling with Retry-After; 500 safe internal failure; 503 database unavailable.
 
-The UI combines Week 13 views; it does not implement registration, password recovery or service-management endpoints.
+## Week 14 development additions
+
+All state-changing routes require the existing CSRF and origin checks. Public registration is restricted to development and test: student-number ownership is not verified. Recovery by email or SMS is not implemented.
+
+| Methods and paths | Inputs and results |
+| --- | --- |
+| POST /auth/register | full_name, student_number, email, optional phone_number, password, password_confirmation, terms_accepted=true → 201 student; no automatic login; 409 duplicate; 429 rate limit |
+| PATCH /account/me; POST /account/password | email/phone update → 200 identity; current/new/confirmation password → 204, revoke all sessions |
+| GET /staff/services; GET /staff/services/{id} | Staff-only service identities and published version history; draft contents excluded |
+| POST /staff/services | Manager-only service_code and complete configuration → 201 inactive identity plus draft |
+| GET /staff/services/{id}/draft; POST /staff/services/{id}/draft | Manager-only current draft, or clone current publication into one new editable draft |
+| PUT /staff/services/{id}/draft | Manager-only expected_row_version and complete configuration → saved draft with incremented row version |
+| POST /staff/services/{id}/publish | Manager-only expected_row_version and optional activate → immutable publication and current pointer |
+| PATCH /staff/services/{id}/availability | Manager-only is_active and expected_current_version_id; activation requires a publication |
+
+The configuration contains name, description, category, eligibility_instructions, processing_days, payment and ordered requirements. Each requirement uses field_key, label, optional help_text, field_type, required, type-specific validation, and ordered select options. Draft requirement IDs may change on save because no submission references an editable draft. Pinned published IDs and submitted revisions are never replaced. Publishing an active version queues one deduplicated announcement per active student.

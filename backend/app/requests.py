@@ -168,7 +168,7 @@ def validate_snapshot(db, body, actor, version, request_id=None):
             or (version["payment_reference_required"] and not payment.reference)
             or (version["payment_receipt_required"] and not payment.receipt_file_id)
         ):
-            fail("VALIDATION_FAILED", "Required fictional payment evidence is missing.")
+            fail("VALIDATION_FAILED", "Required payment evidence is missing.")
         if payment.receipt_file_id:
             slots.append((payment.receipt_file_id, None))
     ids = [f for f, _ in slots]
@@ -933,7 +933,7 @@ def approve(
         if not review or review["outcome"] != "verified":
             fail(
                 "PAYMENT_NOT_VERIFIED",
-                "Verify fictional payment evidence for this revision first.",
+                "Verify payment evidence for this revision first.",
                 409,
             )
     return transition(db, req, actor, "processing", body.public_remarks)

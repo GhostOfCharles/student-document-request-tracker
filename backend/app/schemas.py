@@ -7,6 +7,7 @@ from pydantic import (
     Field,
     StrictBool,
     StrictInt,
+    field_validator,
     model_validator,
 )
 
@@ -16,9 +17,61 @@ class Input(BaseModel):
 
 
 class Login(Input):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
     login: str = Field(min_length=1, max_length=254)
     password: str = Field(min_length=1, max_length=128)
     remember_me: bool = False
+
+    @field_validator("login", mode="before")
+    @classmethod
+    def normalize_login(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+
+class Register(Input):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
+    full_name: str = Field(min_length=2, max_length=150)
+    student_number: str = Field(min_length=1, max_length=50)
+    email: str = Field(min_length=3, max_length=254, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    phone_number: str | None = Field(default=None, max_length=30)
+    password: str = Field(min_length=12, max_length=128)
+    password_confirmation: str = Field(min_length=12, max_length=128)
+    terms_accepted: Literal[True]
+
+    @field_validator("full_name", "student_number", "email", "phone_number", mode="before")
+    @classmethod
+    def normalize_identity(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+    @model_validator(mode="after")
+    def matching_password(self):
+        if self.password != self.password_confirmation:
+            raise ValueError("Passwords do not match.")
+        return self
+
+
+class ProfileUpdate(Input):
+    email: str | None = Field(default=None, min_length=3, max_length=254, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    phone_number: str | None = Field(default=None, max_length=30)
+
+    @model_validator(mode="after")
+    def has_update(self):
+        if not self.model_fields_set:
+            raise ValueError("Provide an email or phone number.")
+        return self
+
+
+class PasswordChange(Input):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=12, max_length=128)
+    new_password_confirmation: str = Field(min_length=12, max_length=128)
+
+    @model_validator(mode="after")
+    def matching_password(self):
+        if self.new_password != self.new_password_confirmation:
+            raise ValueError("Passwords do not match.")
+        return self
 
 
 class Answer(Input):

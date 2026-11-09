@@ -7,14 +7,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from app.config import settings, ROOT
-from app import auth, services, requests, files, operations
+from app import auth, account, services, service_management, requests, files, operations
 
 app = FastAPI(title="Student Document Request Tracker — Week 13", version="0.13.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PATCH", "DELETE"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
     allow_headers=["Content-Type", "X-CSRF-Token"],
 )
 
@@ -92,7 +92,9 @@ async def headers(request: Request, call_next):
 
 for router in (
     auth.router,
+    account.router,
     services.router,
+    service_management.router,
     requests.router,
     files.router,
     operations.router,

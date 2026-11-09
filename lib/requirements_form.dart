@@ -3,17 +3,20 @@ import 'package:file_picker/file_picker.dart';
 import 'package:uuid/uuid.dart';
 
 import 'api.dart';
+import 'design_system.dart';
 
 class RequirementsForm extends StatefulWidget {
   final Api api;
   final Json service;
   final Json? request;
+  final bool preview;
   final void Function(Json) onSubmitted;
   const RequirementsForm({
     super.key,
     required this.api,
     required this.service,
     this.request,
+    this.preview = false,
     required this.onSubmitted,
   });
   @override
@@ -71,16 +74,28 @@ class _RequirementsFormState extends State<RequirementsForm> {
 
   Future<void> choose(int? id) async {
     try {
+      final field = id == null
+          ? null
+          : fields.cast<Json>().firstWhere((f) => f['id'] == id);
+      final allowed =
+          field?['allowed_mime_types'] as List? ??
+          const ['application/pdf', 'image/jpeg', 'image/png'];
+      final extensions = <String>[
+        if (allowed.contains('application/pdf')) 'pdf',
+        if (allowed.contains('image/jpeg')) ...['jpg', 'jpeg'],
+        if (allowed.contains('image/png')) 'png',
+      ];
+      final limit = field?['max_file_size_bytes'] as int? ?? 5242880;
       final pick = await FilePicker.pickFile(
         type: FileType.custom,
-        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+        allowedExtensions: extensions,
       );
       if (pick == null) return;
       final size = await pick.length();
-      if (size == null || size > 5242880 || size == 0) {
+      if (size == null || size > limit || size == 0) {
         throw ApiError(
           'FILE_TOO_LARGE',
-          'Select a nonempty file up to 5 MiB.',
+          'Select a nonempty file within the configured size limit.',
           413,
         );
       }
@@ -175,7 +190,7 @@ class _RequirementsFormState extends State<RequirementsForm> {
       }
     }
     if (version['payment']['receipt_required'] && receipt == null) {
-      setState(() => error = 'Upload fictional payment evidence.');
+      setState(() => error = 'Upload the required payment evidence.');
       return;
     }
     final confirmed = await showDialog<bool>(
@@ -183,7 +198,7 @@ class _RequirementsFormState extends State<RequirementsForm> {
       builder: (context) => AlertDialog(
         title: const Text('Confirm submission'),
         content: const Text(
-          'Submit this synthetic evidence as an immutable revision?',
+          'Submit these details and attachments for registrar review?',
         ),
         actions: [
           TextButton(
@@ -230,7 +245,7 @@ class _RequirementsFormState extends State<RequirementsForm> {
           Text(label),
           if (field['help_text'] != null) Text(field['help_text']),
           OutlinedButton.icon(
-            onPressed: enabled ? () => choose(id) : null,
+            onPressed: enabled && !widget.preview ? () => choose(id) : null,
             icon: const Icon(Icons.upload_file),
             label: Text(
               files[id] == null
@@ -330,7 +345,10 @@ class _RequirementsFormState extends State<RequirementsForm> {
         },
       );
     }
-    return Padding(padding: const EdgeInsets.only(bottom: 20), child: child);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: StudentSpace.sectionGap),
+      child: child,
+    );
   }
 
   @override
@@ -349,52 +367,53 @@ class _RequirementsFormState extends State<RequirementsForm> {
         Text(version['eligibility_instructions'] ?? ''),
         if (correction != null)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: StudentSpace.medium),
             child: Text(
               '${correction!['general_instructions']}\n${(correction!['items'] as List).map((i) => i['instruction']).join('\n')}',
             ),
           ),
-        const SizedBox(height: 24),
+        const SizedBox(height: StudentSpace.page - 4),
         for (final field in fields) fieldWidget(field),
         if (version['payment']['required']) ...[
           Text(
-            'Fictional manual payment • ${version['payment']['currency']} ${version['payment']['amount']}',
+            'Payment evidence • ${version['payment']['currency']} ${version['payment']['amount']}',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           Text(version['payment']['instructions'] ?? ''),
-          TextFormField(
-            controller: reference,
-            enabled:
-                !busy &&
-                retryPayload == null &&
-                editable(null, 'payment_reference'),
-            decoration: const InputDecoration(
-              labelText: 'Fictional payment reference',
+          if (version['payment']['reference_required'])
+            TextFormField(
+              controller: reference,
+              enabled:
+                  !busy &&
+                  retryPayload == null &&
+                  editable(null, 'payment_reference'),
+              decoration: const InputDecoration(labelText: 'Payment reference'),
+              validator: (v) =>
+                  version['payment']['reference_required'] &&
+                      (v ?? '').trim().isEmpty
+                  ? 'Enter the payment reference.'
+                  : null,
             ),
-            validator: (v) =>
-                version['payment']['reference_required'] &&
-                    (v ?? '').trim().isEmpty
-                ? 'Enter the test reference.'
-                : null,
-          ),
-          OutlinedButton.icon(
-            onPressed:
-                !busy &&
-                    retryPayload == null &&
-                    editable(null, 'payment_receipt')
-                ? () => choose(null)
-                : null,
-            icon: const Icon(Icons.receipt_long),
-            label: Text(
-              receipt == null
-                  ? 'Upload fictional receipt'
-                  : 'Replace fictional receipt: ${receipt!['original_filename']}',
+          if (version['payment']['receipt_required'])
+            OutlinedButton.icon(
+              onPressed:
+                  !widget.preview &&
+                      !busy &&
+                      retryPayload == null &&
+                      editable(null, 'payment_receipt')
+                  ? () => choose(null)
+                  : null,
+              icon: const Icon(Icons.receipt_long),
+              label: Text(
+                receipt == null
+                    ? 'Upload payment receipt'
+                    : 'Replace payment receipt: ${receipt!['original_filename']}',
+              ),
             ),
-          ),
         ],
         if (error != null)
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(StudentSpace.itemGap),
             child: Text(
               error!,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
@@ -405,15 +424,18 @@ class _RequirementsFormState extends State<RequirementsForm> {
             'Retry sends the same submission safely. Reopen the form to edit after checking My Requests.',
           ),
         if (busy) const LinearProgressIndicator(),
-        FilledButton.icon(
-          onPressed: busy ? null : submit,
-          icon: const Icon(Icons.send),
-          label: Text(
-            retryPayload != null
-                ? 'Retry identical submission'
-                : 'Submit request',
+        if (widget.preview)
+          const Text('Preview only. Uploading and submission are disabled.')
+        else
+          FilledButton.icon(
+            onPressed: busy ? null : submit,
+            icon: const Icon(Icons.send),
+            label: Text(
+              retryPayload != null
+                  ? 'Retry identical submission'
+                  : 'Submit request',
+            ),
           ),
-        ),
       ],
     ),
   );

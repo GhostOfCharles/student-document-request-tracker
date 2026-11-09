@@ -248,6 +248,17 @@ def deliver(db, job, now):
             recipient["role"] == "student" and recipient["id"] != req["student_user_id"]
         ):
             raise PermanentFailure("RECIPIENT_UNAUTHORIZED")
+    elif payload.get("notification_type") == "service_published":
+        service_id = payload.get("service_id")
+        version_id = payload.get("service_version_id")
+        version = one(
+            db, m.document_service_versions,
+            m.document_service_versions.c.id == version_id,
+            m.document_service_versions.c.service_id == service_id,
+            m.document_service_versions.c.version_status == "published",
+        )
+        if recipient["role"] != "student" or not version:
+            raise PermanentFailure("RECIPIENT_UNAUTHORIZED")
     elif recipient["role"] != "staff":
         raise PermanentFailure("RECIPIENT_UNAUTHORIZED")
     if (
@@ -270,6 +281,7 @@ def deliver(db, job, now):
             recipient_user_id=recipient["id"],
             notification_type=payload.get("notification_type", "request_status"),
             request_id=job["request_id"],
+            service_id=payload.get("service_id") if payload.get("notification_type") == "service_published" else None,
             automation_job_id=job["id"],
             event_key=payload["event_key"],
             title=payload["title"][:180],

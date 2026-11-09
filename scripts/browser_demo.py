@@ -34,8 +34,11 @@ def enable(page, authenticated=False):
     page.wait_for_selector("flt-semantics-placeholder", state="attached")
     page.locator("flt-semantics-placeholder").evaluate("(e)=>e.click()")
     if authenticated:
-        expect(page.get_by_role('button',name='Services',exact=True)).to_be_visible()
-        expect(page.get_by_role('button',name='Refresh current view')).to_be_enabled()
+        expect(page.get_by_role('button', name='User menu')).to_be_visible(timeout=15000)
+        menu = page.get_by_role('button', name='Open navigation menu')
+        if not menu.count():
+            expect(page.get_by_role('button',name='Services',exact=True)).to_be_visible()
+        expect(page.get_by_role('button',name='User menu')).to_be_visible()
     else:
         expect(page.get_by_role("textbox").first).to_be_visible()
 
@@ -52,9 +55,17 @@ def login(page, email):
 
 def nav(page, name):
     paths={'Dashboard':'/dashboard','Services':'/services','Requests':'/requests','Notifications':'/notifications','Automation':'/staff/automation/jobs'}
+    menu = page.get_by_role('button', name='Open navigation menu')
+    if menu.count():
+        menu.click()
     with page.expect_response(lambda r:r.url.split('?')[0].endswith('/api/v1'+paths[name]) and r.request.method=='GET'):
         page.get_by_role("button", name=name, exact=True).click()
-    expect(page.get_by_role('button',name='Refresh current view')).to_be_enabled()
+    expect(page.get_by_role('button',name='User menu')).to_be_visible()
+
+
+def refresh(page):
+    page.get_by_role('button', name='User menu').click()
+    page.get_by_role('menuitem', name='Refresh current page').click()
 
 
 def confirm_action(page, name, expected=(200, 201)):
@@ -62,13 +73,16 @@ def confirm_action(page, name, expected=(200, 201)):
     with page.expect_response(
         lambda r: "/api/v1/" in r.url and r.request.method == "POST"
     ) as response:
+        page.screenshot(
+            path=str(OUT / 'screenshots' / f"staff-dialog-confirm-{re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')}-{page.viewport_size['width']}.png")
+        )
         page.get_by_role("button", name="Confirm", exact=True).click()
     assert response.value.status in expected, (
         name,
         response.value.status,
         response.value.json(),
     )
-    expect(page.get_by_role("button", name="Refresh current view")).to_be_enabled()
+    expect(page.get_by_role("button", name="User menu")).to_be_visible()
     if response.value.status < 400:
         expect(page.get_by_text("Action saved.", exact=True).last).to_be_visible()
     record("workflow_action", action=name, status=response.value.status)
@@ -135,10 +149,10 @@ def main():
         checkbox.click()
         expect(checkbox).to_be_checked()
         upload(student, "Upload Supporting evidence", sample)
-        reference=student.get_by_role('textbox',name='Fictional payment reference')
+        reference=student.get_by_role('textbox',name='Payment reference')
         reference.click()
         reference.press_sequentially('FICTIONAL-BROWSER-001')
-        upload(student, "Upload fictional receipt", sample)
+        upload(student, "Upload payment receipt", sample)
         shot(student, "filled-submission-form.png")
         record("filled_form", snapshot=student.locator("body").aria_snapshot())
         with student.expect_response(
@@ -158,22 +172,78 @@ def main():
         record("submitted", request_id=rid, request_number=number)
         enable(staff)
         login(staff, "registrar@example.test")
+        shot(staff, 'staff-dashboard-desktop.png')
+        nav(staff, 'Services')
+        shot(staff, 'staff-services-desktop.png')
+        service_button = staff.get_by_role('button', name=re.compile('View .* requirements'))
+        if service_button.count():
+            service_button.first.click()
+            expect(staff.get_by_role('button', name='Close', exact=True)).to_be_visible()
+            shot(staff, 'staff-dialog-service-desktop.png')
+            staff.get_by_role('button', name='Close', exact=True).click()
         nav(staff, "Requests")
+        shot(staff, 'staff-request-queue-desktop.png')
         staff.get_by_role("button", name=re.compile(number)).click()
+        shot(staff, 'staff-request-detail-desktop.png')
+        # Exercise a state-changing confirmation and the state-gated review
+        # dialogs at narrow width as well as desktop, then continue the real flow.
+        staff.set_viewport_size({"width": 390, "height": 844})
         confirm_action(staff, "Begin review")
+        shot(staff, 'staff-review-payment-narrow.png')
+        staff.set_viewport_size({"width": 1440, "height": 1000})
         shot(staff, "staff-review-payment.png")
         confirm_action(staff, "Approve requirements", expected=(409,))
-        expect(staff.get_by_role('button',name='Retry / reload current state',exact=True)).to_be_visible()
+        expect(staff.get_by_role('button',name='Try again',exact=True)).to_be_visible()
         shot(staff, "adverse-payment-not-verified.png")
+        staff.set_viewport_size({"width": 390, "height": 844})
+        staff.get_by_role('button', name='Reject request', exact=True).click()
+        expect(staff.get_by_role('textbox', name='Reason or instructions')).to_be_visible()
+        shot(staff, 'staff-dialog-rejection-reason-narrow.png')
+        staff.set_viewport_size({"width": 1440, "height": 1000})
+        shot(staff, 'staff-dialog-rejection-reason-desktop.png')
+        staff.set_viewport_size({"width": 390, "height": 844})
+        staff.keyboard.press('Escape')
+        staff.get_by_role('button', name='Payment: Rejected', exact=True).click()
+        expect(staff.get_by_role('textbox', name='Reason or instructions')).to_be_visible()
+        shot(staff, 'staff-dialog-payment-rejection-narrow.png')
+        staff.set_viewport_size({"width": 1440, "height": 1000})
+        shot(staff, 'staff-dialog-payment-rejection-desktop.png')
+        staff.set_viewport_size({"width": 390, "height": 844})
+        staff.keyboard.press('Escape')
+        staff.get_by_role("button", name="Request correction", exact=True).click()
+        expect(staff.get_by_text('Choose correction target', exact=True)).to_be_visible()
+        shot(staff, 'staff-dialog-correction-target-narrow.png')
+        staff.set_viewport_size({"width": 1440, "height": 1000})
+        shot(staff, 'staff-dialog-correction-target-desktop.png')
+        staff.set_viewport_size({"width": 390, "height": 844})
+        staff.get_by_role("button", name="Supporting evidence", exact=True).click()
+        instructions=staff.get_by_role('textbox',name='Reason or instructions')
+        instructions.click()
+        instructions.press_sequentially('Replace with the orange synthetic example.')
+        shot(staff, 'staff-dialog-correction-instructions-narrow.png')
+        staff.set_viewport_size({"width": 1440, "height": 1000})
+        shot(staff, 'staff-dialog-correction-instructions-desktop.png')
+        staff.set_viewport_size({"width": 390, "height": 844})
+        staff.get_by_role("button", name="Confirm", exact=True).click()
+        expect(staff.get_by_role('button', name='Confirm', exact=True)).to_be_visible()
+        shot(staff, 'staff-dialog-action-confirmation-narrow.png')
+        staff.set_viewport_size({"width": 1440, "height": 1000})
+        shot(staff, 'staff-dialog-action-confirmation-desktop.png')
+        staff.set_viewport_size({"width": 390, "height": 844})
+        staff.keyboard.press('Escape')
+        staff.set_viewport_size({"width": 1440, "height": 1000})
+        # Reopen and submit the actual correction action on the normal desktop
+        # path; the narrow-width run above is cancelled before any mutation.
         staff.get_by_role("button", name="Request correction", exact=True).click()
         staff.get_by_role("button", name="Supporting evidence", exact=True).click()
         instructions=staff.get_by_role('textbox',name='Reason or instructions')
         instructions.click()
         instructions.press_sequentially('Replace with the orange synthetic example.')
         staff.get_by_role("button", name="Confirm", exact=True).click()
+        expect(staff.get_by_role('button', name='Confirm', exact=True)).to_be_visible()
         staff.get_by_role("button", name="Confirm", exact=True).click()
         expect(staff.get_by_text("Needs Correction", exact=False).first).to_be_visible()
-        student.get_by_role("button", name="Refresh current view").click()
+        refresh(student)
         student.get_by_role("button", name="Correct and resubmit", exact=True).click()
         shot(student, "correction-form.png")
         upload(student, "Replace Supporting evidence: browser-synthetic.png", replacement)
@@ -183,12 +253,12 @@ def main():
             student.get_by_text(re.compile("Submission confirmed:.*revision 2")).last
         ).to_be_visible()
         record("correction_resubmitted", request_id=rid)
-        staff.get_by_role("button", name="Refresh current view").click()
+        refresh(staff)
         confirm_action(staff, "Payment: Verified")
         confirm_action(staff, "Approve requirements")
         confirm_action(staff, "Mark ready for release")
         confirm_action(staff, "Confirm actual handover")
-        student.get_by_role("button", name="Refresh current view").click()
+        refresh(student)
         confirm_action(student, "Acknowledge receipt")
         expect(student.get_by_text(re.compile("Completed.*revision 2"))).to_be_visible()
         shot(student, "completed-timeline-desktop.png")
@@ -208,15 +278,13 @@ def main():
         shot(student, "services-narrow.png")
         # Offline browser state is a real failed HTTP request, not a fake response.
         student_context.set_offline(True)
-        student.get_by_role("button", name="Refresh current view").click()
+        refresh(student)
         expect(student.get_by_text(re.compile("NETWORK_ERROR")).last).to_be_visible(
             timeout=30000
         )
         shot(student, "network-error-narrow.png")
         student_context.set_offline(False)
-        student.get_by_role(
-            "button", name="Retry / reload current state", exact=True
-        ).click()
+        student.get_by_role("button", name="Try again", exact=True).click()
         nav(staff, "Automation")
         shot(staff, "automation-monitor-desktop.png")
         staff.get_by_role(
@@ -227,8 +295,47 @@ def main():
         staff.set_viewport_size({'width':390,'height':844})
         staff.on('pageerror',lambda e:errors.append(str(e)))
         enable(staff,authenticated=True)
-        nav(staff,'Automation')
-        shot(staff, "automation-monitor-narrow.png")
+        shot(staff, 'staff-dashboard-narrow.png')
+        nav(staff, 'Services')
+        shot(staff, 'staff-services-narrow.png')
+        service_button = staff.get_by_role('button', name=re.compile('View .* requirements'))
+        if service_button.count():
+            service_button.first.click()
+            expect(staff.get_by_role('button', name='Close', exact=True)).to_be_visible()
+            shot(staff, 'staff-dialog-service-narrow.png')
+            staff.get_by_role('button', name='Close', exact=True).click()
+        nav(staff, 'Requests')
+        shot(staff, 'staff-request-queue-narrow.png')
+        if staff.get_by_role('button', name=re.compile(number)).count():
+            staff.get_by_role('button', name=re.compile(number)).first.click()
+            shot(staff, 'staff-request-detail-narrow.png')
+            note_button = staff.get_by_role('button', name='Add Student visible note', exact=True)
+            if note_button.count():
+                note_button.click()
+                expect(staff.get_by_role('textbox', name='Note')).to_be_visible()
+                shot(staff, 'staff-dialog-note-narrow.png')
+                staff.keyboard.press('Escape')
+            revision_button = staff.get_by_role('button', name='View revision 1', exact=True)
+            if revision_button.count():
+                revision_button.click()
+                expect(staff.get_by_role('button', name='Close', exact=True)).to_be_visible()
+                shot(staff, 'staff-dialog-revision-narrow.png')
+                staff.get_by_role('button', name='Close', exact=True).click()
+        nav(staff, 'Notifications')
+        shot(staff, 'staff-notifications-narrow.png')
+        nav(staff, 'Automation')
+        shot(staff, 'automation-monitor-narrow.png')
+        job_button = staff.get_by_role('button', name=re.compile('Job \\d+ •'))
+        if job_button.count():
+            job_button.first.click()
+            expect(staff.get_by_role('button', name='Close', exact=True)).to_be_visible()
+            shot(staff, 'staff-dialog-job-narrow.png')
+            staff.keyboard.press('Escape')
+        staff.get_by_role('button', name='User menu').click()
+        staff.get_by_role('menuitem', name='Sign out', exact=True).click()
+        expect(staff.get_by_text('Leave this development session?', exact=True)).to_be_visible()
+        shot(staff, 'staff-dialog-signout-narrow.png')
+        staff.keyboard.press('Escape')
         # Notifications are delivered by the designated scheduler, never faked.
         nav(student, "Notifications")
         # Wait at most one real one-minute worker interval using repeated short UI checks.
@@ -236,7 +343,7 @@ def main():
             if student.get_by_role("button", name=re.compile(number)).count():
                 break
             student.wait_for_timeout(1000)
-            student.get_by_role("button", name="Refresh current view").click()
+            refresh(student)
         expect(
             student.get_by_role("button", name=re.compile(number)).first
         ).to_be_visible()

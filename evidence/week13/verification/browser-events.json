@@ -1,200 +1,310 @@
 [
   {
-    "timestamp": "2026-10-30T15:37:26.518256+00:00",
+    "timestamp": "2026-11-02T07:23:09.765580+00:00",
     "event": "screenshot",
     "path": "screenshots/login-desktop.png"
   },
   {
-    "timestamp": "2026-10-30T15:37:26.881915+00:00",
+    "timestamp": "2026-11-02T07:23:10.407823+00:00",
     "event": "screenshot",
     "path": "screenshots/login-validation.png"
   },
   {
-    "timestamp": "2026-10-30T15:37:28.210932+00:00",
+    "timestamp": "2026-11-02T07:23:13.064690+00:00",
     "event": "login",
     "account": "student@example.test"
   },
   {
-    "timestamp": "2026-10-30T15:37:28.331911+00:00",
+    "timestamp": "2026-11-02T07:23:13.220066+00:00",
     "event": "screenshot",
     "path": "screenshots/student-dashboard-desktop.png"
   },
   {
-    "timestamp": "2026-10-30T15:37:28.843504+00:00",
+    "timestamp": "2026-11-02T07:23:13.981122+00:00",
     "event": "screenshot",
     "path": "screenshots/service-requirements.png"
   },
   {
-    "timestamp": "2026-10-30T15:37:29.140635+00:00",
+    "timestamp": "2026-11-02T07:23:14.256525+00:00",
     "event": "form_accessibility",
-    "snapshot": "- heading \"Document requests\" [level=2]\n- button \"Refresh current view\"\n- button \"Sign out\"\n- text: Synthetic Student One \u2022 Student\n- button \"Dashboard\"\n- button \"Services\"\n- button \"Requests\"\n- button \"Notifications\"\n- group:\n  - text: Create request Certificate of Enrollment \u2022 version 1 \u2022 3 calendar days Use synthetic information and fictional evidence only.\n  - textbox \"Purpose of request *\"\n  - text: 200 characters remaining\n  - button \"Request category *\"\n  - 'button \"Preferred date: Choose date\"'\n  - checkbox \"I confirm this is synthetic test data *\"\n  - text: Supporting evidence * PDF/JPEG/PNG, up to 5 MiB.\n  - button \"Upload Supporting evidence\"\n  - text: Fictional manual payment \u2022 PHP 50.00 Upload a fictional test receipt. No money is collected.\n  - textbox \"Fictional payment reference\"\n  - button \"Upload fictional receipt\"\n  - button \"Submit request\""
+    "snapshot": "- text: Student Docs\n- textbox \"Search requests...\"\n- button \"Notifications\"\n- button \"User menu S Synthetic Student One\"\n- text: MENU\n- button \"Dashboard\"\n- button \"Services\"\n- button \"Requests\"\n- button \"Notifications\"\n- text: Week 13 demo Synthetic records only\n- group:\n  - text: Certificate of Enrollment Complete the service requirements below. Create request Certificate of Enrollment \u2022 version 1 \u2022 3 calendar days Use synthetic information and fictional evidence only.\n  - textbox \"Purpose of request *\"\n  - text: 200 characters remaining\n  - button \"Request category *\"\n  - 'button \"Preferred date: Choose date\"'\n  - checkbox \"I confirm this is synthetic test data *\"\n  - text: Supporting evidence * PDF/JPEG/PNG, up to 5 MiB.\n  - button \"Upload Supporting evidence\"\n  - text: Fictional manual payment \u2022 PHP 50.00 Upload a fictional test receipt. No money is collected.\n  - textbox \"Fictional payment reference\"\n  - button \"Upload fictional receipt\"\n  - button \"Submit request\""
   },
   {
-    "timestamp": "2026-10-30T15:37:29.297754+00:00",
+    "timestamp": "2026-11-02T07:23:14.393703+00:00",
     "event": "screenshot",
     "path": "screenshots/dynamic-form-desktop.png"
   },
   {
-    "timestamp": "2026-10-30T15:37:31.489208+00:00",
+    "timestamp": "2026-11-02T07:23:17.593738+00:00",
+    "event": "private_upload",
+    "file_id": 18,
+    "filename": "browser-synthetic.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:23:19.892226+00:00",
     "event": "private_upload",
     "file_id": 19,
     "filename": "browser-synthetic.png"
   },
   {
-    "timestamp": "2026-10-30T15:37:32.819949+00:00",
-    "event": "private_upload",
-    "file_id": 20,
-    "filename": "browser-synthetic.png"
-  },
-  {
-    "timestamp": "2026-10-30T15:37:32.979374+00:00",
+    "timestamp": "2026-11-02T07:23:20.073722+00:00",
     "event": "screenshot",
     "path": "screenshots/filled-submission-form.png"
   },
   {
-    "timestamp": "2026-10-30T15:37:33.003216+00:00",
+    "timestamp": "2026-11-02T07:23:20.086037+00:00",
     "event": "filled_form",
-    "snapshot": "- heading \"Document requests\" [level=2]\n- button \"Refresh current view\"\n- button \"Sign out\"\n- text: Synthetic Student One \u2022 Student\n- button \"Dashboard\"\n- button \"Services\"\n- button \"Requests\"\n- button \"Notifications\"\n- group:\n  - text: Create request Certificate of Enrollment \u2022 version 1 \u2022 3 calendar days Use synthetic information and fictional evidence only.\n  - textbox \"Purpose of request *\"\n  - text: 171 characters remaining\n  - button \"Request category * Scholarship\"\n  - 'button \"Preferred date: Choose date\"'\n  - checkbox \"I confirm this is synthetic test data *\" [checked]\n  - text: Supporting evidence * PDF/JPEG/PNG, up to 5 MiB.\n  - 'button \"Replace Supporting evidence: browser-synthetic.png\"'\n  - text: Fictional manual payment \u2022 PHP 50.00 Upload a fictional test receipt. No money is collected.\n  - textbox \"Fictional payment reference\": FICTIONAL-BROWSER-001\n  - 'button \"Replace fictional receipt: browser-synthetic.png\"'\n  - button \"Submit request\""
+    "snapshot": "- text: Student Docs\n- textbox \"Search requests...\"\n- button \"Notifications\"\n- button \"User menu S Synthetic Student One\"\n- text: MENU\n- button \"Dashboard\"\n- button \"Services\"\n- button \"Requests\"\n- button \"Notifications\"\n- text: Week 13 demo Synthetic records only\n- group:\n  - text: Certificate of Enrollment Complete the service requirements below. Create request Certificate of Enrollment \u2022 version 1 \u2022 3 calendar days Use synthetic information and fictional evidence only.\n  - textbox \"Purpose of request *\"\n  - text: 171 characters remaining\n  - button \"Request category * Scholarship\"\n  - 'button \"Preferred date: Choose date\"'\n  - checkbox \"I confirm this is synthetic test data *\" [checked]\n  - text: Supporting evidence * PDF/JPEG/PNG, up to 5 MiB.\n  - 'button \"Replace Supporting evidence: browser-synthetic.png\"'\n  - text: Fictional manual payment \u2022 PHP 50.00 Upload a fictional test receipt. No money is collected.\n  - textbox \"Fictional payment reference\": FICTIONAL-BROWSER-001\n  - 'button \"Replace fictional receipt: browser-synthetic.png\"'\n  - button \"Submit request\""
   },
   {
-    "timestamp": "2026-10-30T15:37:33.048816+00:00",
+    "timestamp": "2026-11-02T07:23:20.241406+00:00",
     "event": "submission_prompt",
-    "snapshot": "- heading \"Document requests\" [level=2]\n- button \"Refresh current view\"\n- button \"Sign out\"\n- text: Synthetic Student One \u2022 Student\n- button \"Dashboard\"\n- button \"Services\"\n- button \"Requests\"\n- button \"Notifications\"\n- group:\n  - text: Create request Certificate of Enrollment \u2022 version 1 \u2022 3 calendar days Use synthetic information and fictional evidence only.\n  - textbox \"Purpose of request *\"\n  - text: 171 characters remaining\n  - button \"Request category * Scholarship\"\n  - 'button \"Preferred date: Choose date\"'\n  - checkbox \"I confirm this is synthetic test data *\" [checked]\n  - text: Supporting evidence * PDF/JPEG/PNG, up to 5 MiB.\n  - 'button \"Replace Supporting evidence: browser-synthetic.png\"'\n  - text: Fictional manual payment \u2022 PHP 50.00 Upload a fictional test receipt. No money is collected.\n  - textbox \"Fictional payment reference\": FICTIONAL-BROWSER-001\n  - 'button \"Replace fictional receipt: browser-synthetic.png\"'\n  - button \"Submit request\""
+    "snapshot": "- alertdialog:\n  - text: Confirm submission Submit this synthetic evidence as an immutable revision?\n  - button \"Go back\"\n  - button \"Confirm submit\""
   },
   {
-    "timestamp": "2026-10-30T15:37:33.422698+00:00",
+    "timestamp": "2026-11-02T07:23:20.789544+00:00",
     "event": "screenshot",
     "path": "screenshots/submission-confirmation.png"
   },
   {
-    "timestamp": "2026-10-30T15:37:33.422850+00:00",
+    "timestamp": "2026-11-02T07:23:20.790087+00:00",
     "event": "submitted",
-    "request_id": 6,
-    "request_number": "SDRT-2026-000006"
+    "request_id": 7,
+    "request_number": "SDRT-2026-000007"
   },
   {
-    "timestamp": "2026-10-30T15:37:37.045824+00:00",
+    "timestamp": "2026-11-02T07:23:25.918835+00:00",
     "event": "login",
     "account": "registrar@example.test"
   },
   {
-    "timestamp": "2026-10-30T15:37:38.050369+00:00",
+    "timestamp": "2026-11-02T07:23:26.095962+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-dashboard-desktop.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:23:26.716945+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-services-desktop.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:23:27.234961+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-request-queue-desktop.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:23:27.795967+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-request-detail-desktop.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:23:28.611225+00:00",
     "event": "workflow_action",
     "action": "Begin review",
     "status": 200
   },
   {
-    "timestamp": "2026-10-30T15:37:38.187597+00:00",
+    "timestamp": "2026-11-02T07:23:28.847086+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-review-payment-narrow.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:23:29.147481+00:00",
     "event": "screenshot",
     "path": "screenshots/staff-review-payment.png"
   },
   {
-    "timestamp": "2026-10-30T15:37:38.484956+00:00",
+    "timestamp": "2026-11-02T07:23:29.795783+00:00",
     "event": "workflow_action",
     "action": "Approve requirements",
     "status": 409
   },
   {
-    "timestamp": "2026-10-30T15:37:38.640705+00:00",
+    "timestamp": "2026-11-02T07:23:30.013089+00:00",
     "event": "screenshot",
     "path": "screenshots/adverse-payment-not-verified.png"
   },
   {
-    "timestamp": "2026-10-30T15:37:40.525343+00:00",
+    "timestamp": "2026-11-02T07:23:30.539940+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-dialog-rejection-reason-narrow.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:23:30.807122+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-dialog-rejection-reason-desktop.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:23:31.454433+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-dialog-payment-rejection-narrow.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:23:31.771295+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-dialog-payment-rejection-desktop.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:23:32.327830+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-dialog-correction-target-narrow.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:23:32.593596+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-dialog-correction-target-desktop.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:23:33.729737+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-dialog-correction-instructions-narrow.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:23:34.027375+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-dialog-correction-instructions-desktop.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:23:34.378820+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-dialog-action-confirmation-narrow.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:23:34.629119+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-dialog-action-confirmation-desktop.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:23:38.153251+00:00",
     "event": "screenshot",
     "path": "screenshots/correction-form.png"
   },
   {
-    "timestamp": "2026-10-30T15:37:41.323122+00:00",
+    "timestamp": "2026-11-02T07:23:39.871550+00:00",
     "event": "private_upload",
-    "file_id": 21,
+    "file_id": 20,
     "filename": "browser-replacement.png"
   },
   {
-    "timestamp": "2026-10-30T15:37:41.596239+00:00",
+    "timestamp": "2026-11-02T07:23:40.440135+00:00",
     "event": "correction_resubmitted",
-    "request_id": 6
+    "request_id": 7
   },
   {
-    "timestamp": "2026-10-30T15:37:42.402531+00:00",
+    "timestamp": "2026-11-02T07:23:42.060623+00:00",
     "event": "workflow_action",
     "action": "Payment: Verified",
     "status": 201
   },
   {
-    "timestamp": "2026-10-30T15:37:42.751268+00:00",
+    "timestamp": "2026-11-02T07:23:43.008082+00:00",
     "event": "workflow_action",
     "action": "Approve requirements",
     "status": 200
   },
   {
-    "timestamp": "2026-10-30T15:37:43.082585+00:00",
+    "timestamp": "2026-11-02T07:23:43.974849+00:00",
     "event": "workflow_action",
     "action": "Mark ready for release",
     "status": 200
   },
   {
-    "timestamp": "2026-10-30T15:37:43.408523+00:00",
+    "timestamp": "2026-11-02T07:23:44.904801+00:00",
     "event": "workflow_action",
     "action": "Confirm actual handover",
     "status": 200
   },
   {
-    "timestamp": "2026-10-30T15:37:44.079269+00:00",
+    "timestamp": "2026-11-02T07:23:46.284275+00:00",
     "event": "workflow_action",
     "action": "Acknowledge receipt",
     "status": 200
   },
   {
-    "timestamp": "2026-10-30T15:37:44.191557+00:00",
+    "timestamp": "2026-11-02T07:23:46.451472+00:00",
     "event": "screenshot",
     "path": "screenshots/completed-timeline-desktop.png"
   },
   {
-    "timestamp": "2026-10-30T15:37:44.340044+00:00",
+    "timestamp": "2026-11-02T07:23:46.882117+00:00",
     "event": "screenshot",
     "path": "screenshots/immutable-original-revision.png"
   },
   {
-    "timestamp": "2026-10-30T15:37:44.418467+00:00",
+    "timestamp": "2026-11-02T07:23:47.028854+00:00",
     "event": "paid_lifecycle_complete",
-    "request_id": 6,
+    "request_id": 7,
     "revisions": 2
   },
   {
-    "timestamp": "2026-10-30T15:37:46.504502+00:00",
+    "timestamp": "2026-11-02T07:23:50.698805+00:00",
     "event": "screenshot",
     "path": "screenshots/tracking-narrow.png"
   },
   {
-    "timestamp": "2026-10-30T15:37:46.731407+00:00",
+    "timestamp": "2026-11-02T07:23:51.639428+00:00",
     "event": "screenshot",
     "path": "screenshots/services-narrow.png"
   },
   {
-    "timestamp": "2026-10-30T15:37:47.078608+00:00",
+    "timestamp": "2026-11-02T07:23:52.283260+00:00",
     "event": "screenshot",
     "path": "screenshots/network-error-narrow.png"
   },
   {
-    "timestamp": "2026-10-30T15:37:47.739479+00:00",
+    "timestamp": "2026-11-02T07:23:52.771139+00:00",
     "event": "screenshot",
     "path": "screenshots/automation-monitor-desktop.png"
   },
   {
-    "timestamp": "2026-10-30T15:37:50.051101+00:00",
+    "timestamp": "2026-11-02T07:23:56.875029+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-dashboard-narrow.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:23:57.699263+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-services-narrow.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:23:58.564519+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-request-queue-narrow.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:23:59.033870+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-request-detail-narrow.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:23:59.363532+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-dialog-revision-narrow.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:24:00.053657+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-notifications-narrow.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:24:01.464685+00:00",
     "event": "screenshot",
     "path": "screenshots/automation-monitor-narrow.png"
   },
   {
-    "timestamp": "2026-10-30T15:37:50.362007+00:00",
+    "timestamp": "2026-11-02T07:24:02.030362+00:00",
+    "event": "screenshot",
+    "path": "screenshots/staff-dialog-signout-narrow.png"
+  },
+  {
+    "timestamp": "2026-11-02T07:25:09.817526+00:00",
     "event": "screenshot",
     "path": "screenshots/student-notifications-narrow.png"
   },
   {
-    "timestamp": "2026-10-30T15:37:50.362096+00:00",
+    "timestamp": "2026-11-02T07:25:09.817641+00:00",
     "event": "browser_acceptance_pass",
-    "request_id": 6,
+    "request_id": 7,
     "console_errors": [],
     "viewports": [
       "1440x1000",

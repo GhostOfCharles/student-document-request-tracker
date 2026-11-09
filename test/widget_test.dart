@@ -70,6 +70,41 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'Rejected login shows credential error instead of session expiry',
+    (tester) async {
+      final api = Api(
+        client: MockClient((request) async {
+          if (request.url.path.endsWith('/csrf')) {
+            return http.Response(jsonEncode({'csrf_token': 'test-token'}), 200);
+          }
+          final login = request.url.path.endsWith('/login');
+          return http.Response(
+            jsonEncode({
+              'code': login ? 'INVALID_CREDENTIALS' : 'AUTHENTICATION_REQUIRED',
+              'detail': login ? 'The sign-in details are invalid.' : 'Sign in',
+            }),
+            401,
+          );
+        }),
+      );
+      await tester.pumpWidget(TrackerApp(api: api));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField).first, 'TEST-001');
+      await tester.enterText(
+        find.byType(TextFormField).last,
+        'incorrect-password',
+      );
+      await tester.tap(find.text('Sign in'));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('The sign-in details are invalid.'),
+        findsWidgets,
+      );
+      expect(find.text('Your session expired. Sign in again.'), findsNothing);
+    },
+  );
+
   testWidgets('Dynamic fields and required server-configured validation', (
     tester,
   ) async {

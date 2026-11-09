@@ -1,13 +1,31 @@
 # Miscellaneous
 *.class
 *.log
-!evidence/week13/**/*.log
 .env
 .env.*
 !.env.example
+# Local agent instructions and supplied assignment/specification documents.
+AGENTS.md
+**/AGENTS.md
+*.docx
+*.doc
+*.pdf
+# Local database files and backups should never enter source control.
+*.sql
+*.sql.gz
+*.dump
+*.sqlite
+*.sqlite3
+*.db
+*.ibd
+*.ibdata*
+*.frm
+*.MYD
+*.MYI
 backend/.venv/
 __pycache__/
 .pytest_cache/
+.ruff_cache/
 .private/
 .local/
 *.zip
@@ -21,6 +39,18 @@ __pycache__/
 .svn/
 .swiftpm/
 migrate_working_dir/
+
+# Personal handover notes, supplied references, and assessment evidence are
+# kept locally. Commit the application source and the public setup README only.
+/how-to-run.txt
+/Namoc, Charles Klyde T/
+/evidence/
+/docs/specification/
+
+# Local browser automation artifacts
+/playwright-report/
+/test-results/
+playwright/.cache/
 
 # IntelliJ related
 *.iml
