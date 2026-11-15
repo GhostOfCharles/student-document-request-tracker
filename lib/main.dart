@@ -15,6 +15,29 @@ String label(dynamic value) => value
     .map((s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}')
     .join(' ');
 
+String displayDate(dynamic value) {
+  if (value == null) return 'Not available';
+  final parsed = DateTime.tryParse(value.toString());
+  if (parsed == null) return value.toString();
+  final date = parsed.toLocal();
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return '${date.day} ${months[date.month - 1]} ${date.year}, '
+      '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+}
+
 class TrackerApp extends StatelessWidget {
   final Api? api;
   const TrackerApp({super.key, this.api});
@@ -56,6 +79,9 @@ class _TrackerHomeState extends State<TrackerHome> {
   String jobsFilter = '';
   bool rememberMe = false;
   bool showLoginPassword = false;
+  final noteController = TextEditingController();
+  String noteVisibility = 'staff_only';
+  bool postingNote = false;
   bool get staff => actor?['role'] == 'staff';
 
   @override
@@ -70,6 +96,7 @@ class _TrackerHomeState extends State<TrackerHome> {
     login.dispose();
     password.dispose();
     search.dispose();
+    noteController.dispose();
     super.dispose();
   }
 
@@ -416,27 +443,67 @@ class _TrackerHomeState extends State<TrackerHome> {
       for (final item in items)
         Padding(
           padding: const EdgeInsets.only(bottom: StudentSpace.itemGap),
-          child: StudentSectionCard(
+          child: StudentRequestRow(
             padding: const EdgeInsets.symmetric(
               horizontal: StudentSpace.medium,
               vertical: StudentSpace.tight,
             ),
-            child: ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(item['request_number']),
-              subtitle: Text(
-                '${item['service_name'] ?? ''}\nDue ${item['due_at']}',
-              ),
-              isThreeLine: true,
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  StudentStatusBadge(status: item['status']),
-                  const SizedBox(width: StudentSpace.tight),
-                  const Icon(Icons.chevron_right_rounded),
-                ],
-              ),
-              onTap: () => openRequest(item['id']),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final status = StudentStatusBadge(status: item['status']);
+                void openRequestForItem() => openRequest(item['id']);
+                if (constraints.maxWidth < 520) {
+                  return InkWell(
+                    onTap: openRequestForItem,
+                    borderRadius: BorderRadius.circular(StudentRadius.control),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  item['request_number'],
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium,
+                                ),
+                              ),
+                              status,
+                            ],
+                          ),
+                          const SizedBox(height: StudentSpace.tight),
+                          Text(item['service_name'] ?? ''),
+                          const SizedBox(height: StudentSpace.micro),
+                          Text(
+                            'Due ${displayDate(item['due_at'])}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(item['request_number']),
+                  subtitle: Text(
+                    '${item['service_name'] ?? ''}\nDue ${displayDate(item['due_at'])}',
+                  ),
+                  isThreeLine: true,
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      status,
+                      const SizedBox(width: StudentSpace.tight),
+                      const Icon(Icons.chevron_right_rounded),
+                    ],
+                  ),
+                  onTap: openRequestForItem,
+                );
+              },
             ),
           ),
         ),
@@ -445,161 +512,62 @@ class _TrackerHomeState extends State<TrackerHome> {
 
   Widget dashboard() {
     final counts = data['counts'] as Json;
-    if (!staff) {
-      final cards = <Widget>[
-        for (final state in [
-          'submitted',
-          'under_review',
-          'needs_correction',
-          'processing',
-          'ready_for_release',
-          'released',
-          'completed',
-          'rejected',
-          'cancelled',
-        ])
-          StudentStatCard(
-            label: label(state),
-            value: '${counts[state] ?? 0}',
-            icon: switch (state) {
-              'completed' => Icons.check_circle_outline,
-              'rejected' || 'cancelled' => Icons.cancel_outlined,
-              'needs_correction' => Icons.edit_note_rounded,
-              'processing' ||
-              'ready_for_release' ||
-              'released' => Icons.autorenew_rounded,
-              _ => Icons.pending_actions_rounded,
-            },
-            color: switch (state) {
-              'completed' => StudentColors.green,
-              'rejected' || 'cancelled' => StudentColors.red,
-              'needs_correction' => StudentColors.amber,
-              _ => StudentColors.primary,
-            },
-            tint: switch (state) {
-              'completed' => StudentColors.greenTint,
-              'rejected' || 'cancelled' => StudentColors.redTint,
-              'needs_correction' => StudentColors.amberTint,
-              _ => StudentColors.blueTint,
-            },
-          ),
-        StudentStatCard(
-          label: 'Unread notifications',
-          value: '${data['unread_notifications']}',
-          icon: Icons.notifications_none_rounded,
-          color: StudentColors.purple,
-          tint: StudentColors.purpleTint,
-        ),
-      ];
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const StudentPageHeader(
-            title: 'Your request overview',
-            subtitle: 'Track your document requests and their latest status.',
-          ),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final columns = constraints.maxWidth >= 1000
-                  ? 4
-                  : constraints.maxWidth >= 650
-                  ? 2
-                  : 1;
-              const gap = StudentSpace.itemGap;
-              final width =
-                  (constraints.maxWidth - (columns - 1) * gap) / columns;
-              return Wrap(
-                spacing: gap,
-                runSpacing: gap,
-                children: [
-                  for (final card in cards) SizedBox(width: width, child: card),
-                ],
-              );
-            },
-          ),
-          const SizedBox(height: StudentSpace.sectionGap),
-          StudentSectionCard(
-            title: 'Recent requests',
-            icon: Icons.history_rounded,
-            action: TextButton(
-              onPressed: () => navigate('Requests'),
-              child: const Text('View all'),
-            ),
-            child: requestCards(data['recent_requests']),
-          ),
-        ],
-      );
-    }
-    final statCards = <Widget>[
-      for (final state in [
-        'submitted',
-        'under_review',
-        'needs_correction',
-        'processing',
-        'ready_for_release',
-        'released',
-        'completed',
-        'rejected',
-        'cancelled',
-      ])
-        StudentStatCard(
-          label: label(state),
-          value: '${counts[state] ?? 0}',
-          icon: Icons.pending_actions_rounded,
-          color: state == 'completed'
-              ? StudentColors.green
-              : ['rejected', 'cancelled'].contains(state)
-              ? StudentColors.red
-              : state == 'needs_correction'
-              ? StudentColors.amber
-              : StudentColors.primary,
-          tint: state == 'completed'
-              ? StudentColors.greenTint
-              : ['rejected', 'cancelled'].contains(state)
-              ? StudentColors.redTint
-              : state == 'needs_correction'
-              ? StudentColors.amberTint
-              : StudentColors.blueTint,
-        ),
-      StudentStatCard(
-        label: 'Unread notifications',
-        value: '${data['unread_notifications']}',
-        icon: Icons.notifications_none_rounded,
-      ),
-      StudentStatCard(
-        label: 'Permanent automation failures',
-        value: '${data['failed_automation_jobs']}',
-        icon: Icons.warning_amber_rounded,
-        color: StudentColors.red,
-        tint: StudentColors.redTint,
-      ),
+    int count(String state) => (counts[state] as num?)?.toInt() ?? 0;
+    final active = [
+      'submitted',
+      'under_review',
+      'needs_correction',
+      'processing',
+      'ready_for_release',
+      'released',
+    ].fold<int>(0, (total, state) => total + count(state));
+    const statuses = [
+      'submitted',
+      'under_review',
+      'needs_correction',
+      'processing',
+      'ready_for_release',
+      'released',
+      'completed',
+      'rejected',
+      'cancelled',
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const StudentPageHeader(
-          title: 'Registrar overview',
-          subtitle: 'Request counts and recent activity.',
+        StudentPageHeader(
+          title: staff ? 'Registrar overview' : 'Your request overview',
+          subtitle: staff
+              ? 'A clear view of requests and registrar activity.'
+              : 'Track progress, review updates and collect your documents.',
         ),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final columns = constraints.maxWidth >= 1100
-                ? 4
-                : constraints.maxWidth >= 640
-                ? 2
-                : 1;
-            final width =
-                (constraints.maxWidth - (columns - 1) * StudentSpace.itemGap) /
-                columns;
-            return Wrap(
-              spacing: StudentSpace.itemGap,
-              runSpacing: StudentSpace.itemGap,
-              children: [
-                for (final card in statCards)
-                  SizedBox(width: width, child: card),
-              ],
-            );
-          },
+        StudentResponsiveGrid(
+          children: [
+            StudentStatCard(
+              label: 'Active requests',
+              value: '$active',
+              icon: Icons.description_outlined,
+            ),
+            StudentStatCard(
+              label: 'Needs correction',
+              value: '${count('needs_correction')}',
+              icon: Icons.edit_note_rounded,
+              color: StudentColors.amber,
+              tint: StudentColors.amberTint,
+            ),
+            StudentStatCard(
+              label: 'Ready for release',
+              value: '${count('ready_for_release')}',
+              icon: Icons.inventory_2_outlined,
+            ),
+            StudentStatCard(
+              label: 'Completed',
+              value: '${count('completed')}',
+              icon: Icons.task_alt_rounded,
+              color: StudentColors.green,
+              tint: StudentColors.greenTint,
+            ),
+          ],
         ),
         const SizedBox(height: StudentSpace.sectionGap),
         StudentSectionCard(
@@ -607,9 +575,45 @@ class _TrackerHomeState extends State<TrackerHome> {
           icon: Icons.history_rounded,
           action: TextButton(
             onPressed: () => navigate('Requests'),
-            child: const Text('View queue'),
+            child: Text(staff ? 'View queue' : 'View all'),
           ),
           child: requestCards(data['recent_requests']),
+        ),
+        const SizedBox(height: StudentSpace.sectionGap),
+        StudentSectionCard(
+          title: 'All request statuses',
+          icon: Icons.insights_outlined,
+          child: Wrap(
+            spacing: StudentSpace.medium,
+            runSpacing: StudentSpace.medium,
+            children: [
+              for (final state in statuses)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(child: StudentStatusBadge(status: state)),
+                    const SizedBox(width: StudentSpace.tight),
+                    Text(
+                      '${count(state)}',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: StudentSpace.sectionGap),
+        Wrap(
+          spacing: StudentSpace.medium,
+          runSpacing: StudentSpace.tight,
+          children: [
+            Text('Unread notifications: ${data['unread_notifications'] ?? 0}'),
+            if (staff)
+              Text(
+                'Permanent automation failures: ${data['failed_automation_jobs'] ?? 0}',
+                style: const TextStyle(color: StudentColors.red),
+              ),
+          ],
         ),
       ],
     );
@@ -695,63 +699,89 @@ class _TrackerHomeState extends State<TrackerHome> {
             Padding(
               padding: const EdgeInsets.only(bottom: StudentSpace.itemGap),
               child: StudentSectionCard(
-                child: Row(
-                  children: [
-                    Container(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compact = constraints.maxWidth < 520;
+                    final serviceIcon = Container(
                       width: StudentSize.serviceIcon,
                       height: StudentSize.serviceIcon,
                       decoration: BoxDecoration(
-                        color: StudentColors.blueTint,
+                        color: StudentColors.primaryTint,
                         borderRadius: BorderRadius.circular(
-                          StudentRadius.control,
+                          StudentRadius.iconTile,
                         ),
                       ),
                       child: const Icon(
                         Icons.description_outlined,
                         color: StudentColors.primary,
                       ),
-                    ),
-                    const SizedBox(width: StudentSpace.compact),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item['name'],
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: StudentSpace.micro + 1),
-                          Text(
-                            item['description'] ?? '',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                          const SizedBox(height: StudentSpace.tight + 1),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 6,
-                            children: [
-                              StudentStatusBadge(
-                                status: item['payment_required']
-                                    ? 'payment_evidence'
-                                    : 'no_payment',
-                              ),
-                              Text(
-                                '${item['processing_days']} processing days',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: StudentSpace.itemGap),
-                    IconButton(
+                    );
+                    final details = Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item['name'],
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: StudentSpace.tight),
+                        Text(
+                          item['description'] ?? '',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: StudentSpace.compact),
+                        Wrap(
+                          spacing: StudentSpace.tight,
+                          runSpacing: StudentSpace.tight,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            StudentStatusBadge(
+                              status: item['payment_required']
+                                  ? 'payment_evidence'
+                                  : 'no_payment',
+                            ),
+                            Text(
+                              '${item['processing_days']} processing days',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                    final action = IconButton(
                       tooltip: 'View ${item['name']} requirements',
                       onPressed: () => serviceDetails(item['id']),
                       icon: const Icon(Icons.arrow_forward_rounded),
                       color: StudentColors.primary,
-                    ),
-                  ],
+                    );
+                    if (compact) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              serviceIcon,
+                              const SizedBox(width: StudentSpace.compact),
+                              Expanded(child: details),
+                            ],
+                          ),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: action,
+                          ),
+                        ],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        serviceIcon,
+                        const SizedBox(width: StudentSpace.compact),
+                        Expanded(child: details),
+                        const SizedBox(width: StudentSpace.itemGap),
+                        action,
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -794,187 +824,403 @@ class _TrackerHomeState extends State<TrackerHome> {
     );
   }
 
-  Widget fileButton(Json? file) => file == null
+  Widget fileButton(Json? file, {String? label}) => file == null
       ? const SizedBox.shrink()
-      : TextButton.icon(
-          onPressed: () =>
+      : StudentDocumentCard(
+          filename: file['original_filename'] ?? 'Document',
+          sizeBytes: file['size_bytes'] ?? 0,
+          onOpen: () =>
               openEvidence(api.uri('/files/${file['id']}').toString()),
-          icon: const Icon(Icons.download),
-          label: Text(
-            '${file['original_filename']} (${file['size_bytes']} bytes)',
-          ),
+          label: label,
         );
 
   Widget revisionContent(Json revision, Json version) {
-    String answerLabel(Json answer) {
-      final field = (version['requirements'] as List).firstWhere(
+    final fields = (version['requirements'] as List? ?? []);
+    final List<(String, String)> items = [];
+    for (final answer in (revision['answers'] as List? ?? [])) {
+      final field = fields.firstWhere(
         (f) => f['id'] == answer['requirement_id'],
+        orElse: () => {'label': 'Requirement'},
       );
       dynamic value =
           answer['text_value'] ??
           answer['date_value'] ??
           answer['boolean_value'];
-      value ??= (field['options'] as List).firstWhere(
-        (o) => o['id'] == answer['selected_option_id'],
-      )['label'];
-      return '${field['label']}: $value';
+      if (value == null && answer['selected_option_id'] != null) {
+        final options = (field['options'] as List? ?? []);
+        final opt = options.firstWhere(
+          (o) => o['id'] == answer['selected_option_id'],
+          orElse: () => {'label': 'Selected option'},
+        );
+        value = opt['label'];
+      }
+      items.add((
+        field['label']?.toString() ?? 'Requirement',
+        value is bool ? (value ? 'Yes' : 'No') : (value?.toString() ?? 'None'),
+      ));
     }
+
+    if (version['payment']?['required'] == true) {
+      items.add((
+        'Payment reference',
+        revision['payment']?['reference']?.toString() ?? 'Not provided',
+      ));
+    }
+
+    final attachments = (revision['attachments'] as List? ?? []);
+    final receipt = revision['payment']?['receipt'];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final answer in revision['answers'])
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Text(answerLabel(answer)),
+        if (items.isNotEmpty) StudentPropertyGrid(items: items),
+        if (attachments.isNotEmpty || receipt != null) ...[
+          const SizedBox(height: StudentSpace.sectionGap),
+          const Text(
+            'ATTACHED DOCUMENTS',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              color: StudentColors.muted,
+            ),
           ),
-        for (final attachment in revision['attachments'])
-          fileButton(attachment['file']),
-        if (version['payment']['required']) ...[
-          Text('Payment reference: ${revision['payment']['reference']}'),
-          fileButton(revision['payment']['receipt']),
+          const SizedBox(height: StudentSpace.tight),
+          for (final att in attachments)
+            if (att['file'] != null)
+              fileButton(att['file'], label: 'Supporting Evidence'),
+          if (receipt != null) fileButton(receipt, label: 'Payment Receipt'),
         ],
       ],
     );
   }
 
-  Widget detail() {
-    final req = selected!;
-    final state = req['status'];
-    final version = req['service']['version'] as Json;
-    final revision = req['latest_revision'] as Json;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (!staff) ...[
-          Text(
-            'Current revision ${req['current_revision_number']}',
-            style: Theme.of(context).textTheme.titleMedium,
+  String formatDueSLA(String? dueAtStr) {
+    if (dueAtStr == null) return 'No due date';
+    final due = DateTime.tryParse(dueAtStr);
+    if (due == null) return displayDate(dueAtStr);
+    final diff = due.toLocal().difference(DateTime.now());
+    final days = diff.inDays;
+    if (diff.isNegative) {
+      final absDays = days.abs();
+      return 'Overdue by ${absDays == 0 ? "hours" : "$absDays d"}';
+    }
+    if (days == 0) return 'Due today';
+    return 'Due in $days day${days == 1 ? "" : "s"}';
+  }
+
+  Future<void> submitInlineNote(int requestId) async {
+    final text = noteController.text.trim();
+    if (text.isEmpty) return;
+    setState(() => postingNote = true);
+    try {
+      await api.call(
+        'POST',
+        '/staff/requests/$requestId/notes',
+        {'visibility': noteVisibility, 'note_body': text},
+      );
+      noteController.clear();
+      await fetchDetail(requestId);
+    } catch (e) {
+      if (mounted) setState(() => error = 'Failed to post note: $e');
+    } finally {
+      if (mounted) setState(() => postingNote = false);
+    }
+  }
+
+  Widget studentProfileCard(Json student) {
+    final name = student['full_name']?.toString() ?? 'Student';
+    final number = student['student_number']?.toString() ?? 'N/A';
+    final initials = name
+        .trim()
+        .split(' ')
+        .map((w) => w.isNotEmpty ? w[0] : '')
+        .take(2)
+        .join('')
+        .toUpperCase();
+
+    return StudentSectionCard(
+      title: 'Student Profile',
+      icon: Icons.person_outline,
+      padding: const EdgeInsets.all(StudentSpace.card),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 22,
+            backgroundColor: StudentColors.blueTint,
+            child: Text(
+              initials.isNotEmpty ? initials : 'S',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: StudentColors.primary,
+              ),
+            ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Pinned service version ${version['version_number']} • due ${req['due_at']}',
-            style: Theme.of(context).textTheme.bodyMedium,
+          const SizedBox(width: StudentSpace.itemGap),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: StudentColors.text,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Student ID: $number',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: StudentColors.muted,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ] else ...[
-          Text(
-            req['request_number'],
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-          Text(
-            '${version['name']} • pinned version ${version['version_number']}',
-          ),
-          Text(
-            '${label(state)} • revision ${req['current_revision_number']} • row version ${req['row_version']}',
-          ),
-          Text('Due ${req['due_at']}'),
         ],
-        if (staff)
-          Text(
-            'Student: ${req['student']['full_name']} (${req['student']['student_number']})',
+      ),
+    );
+  }
+
+  Widget workflowActionsCard(
+    Json req,
+    String state,
+    Json version,
+    Json revision,
+  ) {
+    final dueStr = formatDueSLA(req['due_at']);
+    final isUnderReview = state == 'under_review';
+    final isSubmitted = state == 'submitted';
+    final isProcessing = state == 'processing';
+    final isReady = state == 'ready_for_release';
+    final isNeedsCorrection = state == 'needs_correction';
+    final isReleased = state == 'released';
+
+    return StudentSectionCard(
+      title: 'Workflow Actions',
+      icon: Icons.bolt_outlined,
+      padding: const EdgeInsets.all(StudentSpace.card),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: StudentColors.background,
+              borderRadius: BorderRadius.circular(StudentRadius.control),
+              border: Border.all(color: StudentColors.border),
+            ),
+            child: Row(
+              children: [
+                StudentStatusBadge(status: state),
+                const Spacer(),
+                const Icon(
+                  Icons.schedule,
+                  size: 15,
+                  color: StudentColors.muted,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  dueStr,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: StudentColors.muted,
+                  ),
+                ),
+              ],
+            ),
           ),
-        const Divider(height: 32),
-        revisionContent(revision, version),
-        if (version['payment']['required'])
-          Text('Payment outcome: ${req['payment_outcome'] ?? 'Not reviewed'}'),
-        if (req['open_correction_round'] != null) ...[
-          const Divider(),
-          Text(
-            'Correction required: ${req['open_correction_round']['general_instructions']}',
-          ),
-          for (final item in req['open_correction_round']['items'])
-            Text('• ${item['instruction']}'),
-        ],
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            if (staff && state == 'submitted')
+          const SizedBox(height: StudentSpace.medium),
+          if (staff) ...[
+            if (isSubmitted)
               StudentActionButton(
                 loading: busy,
+                kind: StudentActionKind.primary,
                 label: 'Begin review',
                 onPressed: () => workflow('begin-review'),
               ),
-            if (staff && state == 'under_review') ...[
-              if (version['payment']['required'])
-                for (final outcome in [
-                  'verified',
-                  'needs_correction',
-                  'rejected',
-                ])
-                  StudentActionButton(
-                    loading: busy,
-                    kind: outcome == 'rejected'
-                        ? StudentActionKind.destructive
-                        : outcome == 'needs_correction'
-                        ? StudentActionKind.secondary
-                        : StudentActionKind.primary,
-                    label: 'Payment: ${label(outcome)}',
-                    onPressed: () async {
-                      String? note;
-                      if (outcome != 'verified') {
-                        note = await prompt('Payment ${label(outcome)}');
-                        if (note == null) return;
-                      }
-                      await workflow(
-                        'payment-reviews',
-                        extras: {
-                          'revision_id': revision['id'],
-                          'outcome': outcome,
-                          'review_note': ?note,
+            if (isUnderReview) ...[
+              if (version['payment']?['required'] == true) ...[
+                Row(
+                  children: [
+                    const Text(
+                      'PAYMENT REVIEW',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                        color: StudentColors.muted,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    StudentStatusBadge(
+                      status: req['payment_outcome'] ?? 'not_reviewed',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: StudentColors.green,
+                          side: const BorderSide(color: StudentColors.green),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        ),
+                        onPressed: () => workflow(
+                          'payment-reviews',
+                          extras: {
+                            'revision_id': revision['id'],
+                            'outcome': 'verified',
+                          },
+                        ),
+                        child: const Text(
+                          'Verify',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: StudentColors.amber,
+                          side: const BorderSide(color: StudentColors.amber),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        ),
+                        onPressed: () async {
+                          final note = await prompt(
+                            'Payment needs correction',
+                            hint: 'Reason for correction',
+                          );
+                          if (note != null) {
+                            await workflow(
+                              'payment-reviews',
+                              extras: {
+                                'revision_id': revision['id'],
+                                'outcome': 'needs_correction',
+                                'review_note': note,
+                              },
+                            );
+                          }
                         },
-                      );
-                    },
-                  ),
+                        child: const Text(
+                          'Correction',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: StudentColors.red,
+                          side: const BorderSide(color: StudentColors.red),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        ),
+                        onPressed: () async {
+                          final note = await prompt(
+                            'Reject payment',
+                            hint: 'Reason for rejection',
+                          );
+                          if (note != null) {
+                            await workflow(
+                              'payment-reviews',
+                              extras: {
+                                'revision_id': revision['id'],
+                                'outcome': 'rejected',
+                                'review_note': note,
+                              },
+                            );
+                          }
+                        },
+                        child: const Text(
+                          'Reject',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: StudentSpace.medium),
+              ],
               StudentActionButton(
                 loading: busy,
+                kind: StudentActionKind.primary,
                 label: 'Approve requirements',
                 onPressed: () => workflow(
                   'approve',
                   extras: {'confirm_requirements_valid': true},
                 ),
               ),
+              const SizedBox(height: 8),
               StudentActionButton(
+                loading: busy,
                 kind: StudentActionKind.secondary,
                 label: 'Request correction',
                 onPressed: correctionDialog,
               ),
+              const SizedBox(height: 8),
               StudentActionButton(
+                loading: busy,
                 kind: StudentActionKind.destructive,
                 label: 'Reject request',
                 onPressed: () async {
-                  final reason = await prompt('Reject request');
+                  final reason = await prompt(
+                    'Reject request',
+                    hint: 'Reason for rejection',
+                  );
                   if (reason != null) {
                     await workflow('reject', extras: {'reason': reason});
                   }
                 },
               ),
             ],
-            if (staff && state == 'processing')
+            if (isProcessing)
               StudentActionButton(
                 loading: busy,
+                kind: StudentActionKind.primary,
                 label: 'Mark ready for release',
                 onPressed: () => workflow(
                   'ready-for-release',
                   extras: {'confirm_prepared': true},
                 ),
               ),
-            if (staff && state == 'ready_for_release')
+            if (isReady)
               StudentActionButton(
                 loading: busy,
+                kind: StudentActionKind.primary,
                 label: 'Confirm actual handover',
                 onPressed: () =>
                     workflow('release', extras: {'confirm_handover': true}),
               ),
-            if (!staff && state == 'released')
-              FilledButton(
+          ],
+          if (!staff) ...[
+            if (isReleased)
+              FilledButton.icon(
+                icon: const Icon(Icons.check_circle_outline, size: 18),
                 onPressed: () =>
                     workflow('acknowledge', extras: {'confirm_received': true}),
-                child: const Text('Acknowledge receipt'),
+                label: const Text('Acknowledge receipt'),
               ),
-            if (!staff && state == 'needs_correction')
-              FilledButton(
+            if (isNeedsCorrection)
+              FilledButton.icon(
+                icon: const Icon(Icons.edit_note, size: 18),
                 onPressed: () {
                   setState(() {
                     service = req['service'];
@@ -983,101 +1229,471 @@ class _TrackerHomeState extends State<TrackerHome> {
                     success = null;
                   });
                 },
-                child: const Text('Correct and resubmit'),
+                label: const Text('Correct and resubmit'),
               ),
-            if (!staff && ['submitted', 'under_review'].contains(state))
-              OutlinedButton(
+            if (['submitted', 'under_review'].contains(state)) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.cancel_outlined, size: 18),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: StudentColors.red,
+                ),
                 onPressed: () async {
-                  final reason = await prompt('Cancel request');
+                  final reason = await prompt(
+                    'Cancel request',
+                    hint: 'Cancellation reason',
+                  );
                   if (reason != null) {
                     await workflow('cancel', extras: {'reason': reason});
                   }
                 },
-                child: const Text('Cancel request'),
+                label: const Text('Cancel request'),
               ),
-          ],
-        ),
-        const Divider(height: 32),
-        Text('Request notes', style: Theme.of(context).textTheme.titleLarge),
-        for (final note in requestNotes)
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(note['note_body']),
-            subtitle: Text('${note['visibility']} • ${note['created_at']}'),
-          ),
-        if (staff)
-          Wrap(
-            children: [
-              for (final visibility in ['student_visible', 'staff_only'])
-                TextButton(
-                  onPressed: () async {
-                    final body = await prompt(
-                      'Add ${label(visibility)} note',
-                      hint: 'Note',
-                    );
-                    if (body == null) return;
-                    await run(() async {
-                      await api.call(
-                        'POST',
-                        '/staff/requests/${req['id']}/notes',
-                        {'visibility': visibility, 'note_body': body},
-                      );
-                      await fetchDetail(req['id']);
-                    });
-                  },
-                  child: Text('Add ${label(visibility)} note'),
-                ),
             ],
-          ),
-        const Divider(height: 32),
-        Text(
-          'Immutable revision history',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        Wrap(
-          children: [
-            for (final rev in revisions)
-              TextButton(
-                onPressed: () => run(() async {
-                  final old = await api.call(
-                    'GET',
-                    '/requests/${req['id']}/revisions/${rev['revision_number']}',
-                  );
-                  if (!mounted) return;
-                  await showDialog(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: Text('Revision ${rev['revision_number']}'),
-                      content: SizedBox(
-                        width: StudentDialogWidth.of(ctx),
-                        child: SingleChildScrollView(
-                          child: revisionContent(old, version),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget activityDiscussionCard(int requestId) {
+    return StudentSectionCard(
+      title: 'Activity & Discussion',
+      icon: Icons.forum_outlined,
+      padding: const EdgeInsets.all(StudentSpace.card),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (staff) ...[
+            Container(
+              padding: const EdgeInsets.all(StudentSpace.itemGap),
+              decoration: BoxDecoration(
+                color: StudentColors.background,
+                borderRadius: BorderRadius.circular(StudentRadius.control),
+                border: Border.all(color: StudentColors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: noteController,
+                    minLines: 2,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      hintText: 'Add an internal note or communication...',
+                      border: InputBorder.none,
+                      isDense: true,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Divider(height: 1),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ChoiceChip(
+                        label: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.lock_outline, size: 13),
+                            SizedBox(width: 4),
+                            Text('Staff only', style: TextStyle(fontSize: 12)),
+                          ],
                         ),
+                        selected: noteVisibility == 'staff_only',
+                        onSelected: (val) {
+                          if (val) {
+                            setState(() => noteVisibility = 'staff_only');
+                          }
+                        },
                       ),
-                      actions: [
-                        OutlinedButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: const Text('Close'),
+                      ChoiceChip(
+                        label: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.public, size: 13),
+                            SizedBox(width: 4),
+                            Text(
+                              'Student visible',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                        selected: noteVisibility == 'student_visible',
+                        onSelected: (val) {
+                          if (val) {
+                            setState(() => noteVisibility = 'student_visible');
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        onPressed: postingNote
+                            ? null
+                            : () => submitInlineNote(requestId),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        child: postingNote
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Post note',
+                                style: TextStyle(fontSize: 13),
+                              ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: StudentSpace.sectionGap),
+          ],
+          if (requestNotes.isEmpty && history.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: StudentSpace.itemGap),
+              child: Text(
+                'No activity or notes recorded yet.',
+                style: TextStyle(color: StudentColors.muted, fontSize: 13),
+              ),
+            )
+          else ...[
+            for (final note in requestNotes) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: StudentSpace.itemGap),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: note['visibility'] == 'staff_only'
+                      ? StudentColors.amberTint.withValues(alpha: 0.35)
+                      : StudentColors.surface,
+                  borderRadius: BorderRadius.circular(StudentRadius.control),
+                  border: Border.all(
+                    color: note['visibility'] == 'staff_only'
+                        ? StudentColors.amber.withValues(alpha: 0.3)
+                        : StudentColors.border,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          note['visibility'] == 'staff_only'
+                              ? Icons.lock_outline
+                              : Icons.chat_bubble_outline,
+                          size: 14,
+                          color: note['visibility'] == 'staff_only'
+                              ? StudentColors.amber
+                              : StudentColors.primary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          note['visibility'] == 'staff_only'
+                              ? 'INTERNAL STAFF NOTE'
+                              : 'STUDENT VISIBLE NOTE',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                            color: note['visibility'] == 'staff_only'
+                                ? StudentColors.amber
+                                : StudentColors.primary,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          displayDate(note['created_at']),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: StudentColors.muted,
+                          ),
                         ),
                       ],
                     ),
-                  );
-                }),
-                child: Text('View revision ${rev['revision_number']}'),
+                    const SizedBox(height: 6),
+                    SelectableText(
+                      note['note_body'] ?? '',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: StudentColors.text,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+            ],
+            if (history.isNotEmpty) ...[
+              const SizedBox(height: StudentSpace.tight),
+              const Text(
+                'STATUS AUDIT TRAIL',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                  color: StudentColors.muted,
+                ),
+              ),
+              const SizedBox(height: StudentSpace.itemGap),
+              for (var i = 0; i < history.length; i++)
+                StudentTimelineItem(
+                  status: history[i]['new_status'] ?? '',
+                  date:
+                      '${displayDate(history[i]['created_at'])} • ${label(history[i]['change_source'] ?? '')}',
+                  remarks: history[i]['public_remarks'] ?? '',
+                  last: i == history.length - 1,
+                ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget revisionHistoryCard(Json req, Json version) {
+    return StudentSectionCard(
+      title: 'Version & History',
+      icon: Icons.history_outlined,
+      padding: const EdgeInsets.all(StudentSpace.card),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.info_outline,
+                size: 16,
+                color: StudentColors.muted,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Service v${version['version_number']} • Revision ${req['current_revision_number']}',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: StudentColors.text,
+                ),
+              ),
+            ],
+          ),
+          if (revisions.length > 1) ...[
+            const SizedBox(height: StudentSpace.itemGap),
+            const Text(
+              'PREVIOUS REVISIONS',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
+                color: StudentColors.muted,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final rev in revisions)
+                  ActionChip(
+                    label: Text(
+                      'Revision ${rev['revision_number']}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    avatar: const Icon(Icons.history, size: 14),
+                    onPressed: () => run(() async {
+                      final old = await api.call(
+                        'GET',
+                        '/requests/${req['id']}/revisions/${rev['revision_number']}',
+                      );
+                      if (!mounted) return;
+                      await showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: Text('Revision ${rev['revision_number']}'),
+                          content: SizedBox(
+                            width: StudentDialogWidth.of(ctx),
+                            child: SingleChildScrollView(
+                              child: revisionContent(old, version),
+                            ),
+                          ),
+                          actions: [
+                            OutlinedButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text('Close'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget detail() {
+    final req = selected!;
+    final state = req['status'] as String;
+    final version = req['service']['version'] as Json;
+    final revision = req['latest_revision'] as Json;
+
+    final leftCards = <Widget>[
+      StudentSectionCard(
+        title: 'Submitted Requirements',
+        icon: Icons.assignment_outlined,
+        padding: const EdgeInsets.all(StudentSpace.card),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (req['open_correction_round'] != null) ...[
+              Container(
+                padding: const EdgeInsets.all(14),
+                margin: const EdgeInsets.only(bottom: StudentSpace.medium),
+                decoration: BoxDecoration(
+                  color: StudentColors.amberTint,
+                  borderRadius: BorderRadius.circular(StudentRadius.control),
+                  border: Border.all(
+                    color: StudentColors.amber.withValues(alpha: 0.5),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: StudentColors.amber,
+                          size: 18,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'CORRECTION REQUIRED',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.6,
+                            color: StudentColors.amber,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      req['open_correction_round']['general_instructions'] ??
+                          '',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: StudentColors.text,
+                      ),
+                    ),
+                    for (final item in (req['open_correction_round']['items']
+                            as List? ??
+                        []))
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          '• ${item['instruction']}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: StudentColors.text,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+            revisionContent(revision, version),
           ],
         ),
-        Text('Status timeline', style: Theme.of(context).textTheme.titleLarge),
-        for (final event in history)
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.history),
-            title: Text(label(event['new_status'])),
-            subtitle: Text(
-              '${event['created_at']} • ${event['change_source']}\n${event['public_remarks'] ?? ''}',
-            ),
-          ),
+      ),
+      const SizedBox(height: StudentSpace.sectionGap),
+      activityDiscussionCard(req['id']),
+    ];
+
+    final rightCards = <Widget>[
+      workflowActionsCard(req, state, version, revision),
+      if (staff && req['student'] != null) ...[
+        const SizedBox(height: StudentSpace.sectionGap),
+        studentProfileCard(req['student']),
       ],
+      const SizedBox(height: StudentSpace.sectionGap),
+      StudentSectionCard(
+        title: 'Progress Milestones',
+        icon: Icons.alt_route_outlined,
+        padding: const EdgeInsets.all(StudentSpace.card),
+        child: StudentMilestoneStepper(status: state),
+      ),
+      const SizedBox(height: StudentSpace.sectionGap),
+      revisionHistoryCard(req, version),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth >= 900;
+        if (isDesktop) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: leftCards,
+                ),
+              ),
+              const SizedBox(width: StudentSpace.sectionGap),
+              SizedBox(
+                width: 360,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: rightCards,
+                ),
+              ),
+            ],
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            rightCards[0],
+            if (staff && req['student'] != null) ...[
+              const SizedBox(height: StudentSpace.sectionGap),
+              studentProfileCard(req['student']),
+            ],
+            const SizedBox(height: StudentSpace.sectionGap),
+            leftCards[0],
+            const SizedBox(height: StudentSpace.sectionGap),
+            StudentSectionCard(
+              title: 'Progress Milestones',
+              icon: Icons.alt_route_outlined,
+              padding: const EdgeInsets.all(StudentSpace.card),
+              child: StudentMilestoneStepper(status: state),
+            ),
+            const SizedBox(height: StudentSpace.sectionGap),
+            leftCards[2],
+            const SizedBox(height: StudentSpace.sectionGap),
+            revisionHistoryCard(req, version),
+          ],
+        );
+      },
     );
   }
 
@@ -1128,7 +1744,9 @@ class _TrackerHomeState extends State<TrackerHome> {
                         ),
                       ),
                       title: Text(n['title']),
-                      subtitle: Text('${n['message']}\n${n['created_at']}'),
+                      subtitle: Text(
+                        '${n['message']}\n${displayDate(n['created_at'])}',
+                      ),
                       isThreeLine: true,
                       onTap: () => run(() async {
                         await api.call(
@@ -1199,7 +1817,9 @@ class _TrackerHomeState extends State<TrackerHome> {
                       ),
                       subtitle: Padding(
                         padding: const EdgeInsets.only(top: 4),
-                        child: Text('${n['message']}\n${n['created_at']}'),
+                        child: Text(
+                          '${n['message']}\n${displayDate(n['created_at'])}',
+                        ),
                       ),
                       isThreeLine: true,
                       onTap: () => run(() async {
@@ -1491,7 +2111,7 @@ class _TrackerHomeState extends State<TrackerHome> {
                       contentPadding: EdgeInsets.zero,
                       title: Text('${entry['action']} ? ${entry['result']}'),
                       subtitle: Text(
-                        '${entry['created_at']} ? ${entry['target_type']} ${entry['target_id'] ?? ''}',
+                        '${displayDate(entry['created_at'])} ? ${entry['target_type']} ${entry['target_id'] ?? ''}',
                       ),
                     ),
                 ],
@@ -1512,7 +2132,7 @@ class _TrackerHomeState extends State<TrackerHome> {
                   ? 'Complete the service requirements below.'
                   : 'Review the requested changes and resubmit your correction.',
             ),
-            StudentSectionCard(
+            StudentFormSurface(
               icon: formRequest == null
                   ? Icons.add_task_rounded
                   : Icons.edit_note_rounded,
@@ -1559,33 +2179,12 @@ class _TrackerHomeState extends State<TrackerHome> {
               )
             : services();
       case 'Detail':
-        if (staff) {
-          return selected == null
-              ? const StudentEmptyState(
-                  title: 'Request unavailable',
-                  message: 'Return to the request queue and select a request.',
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    StudentPageHeader(
-                      title: selected!['request_number'],
-                      subtitle:
-                          '${selected!['service']['version']['name']} • registrar review',
-                      trailing: StudentStatusBadge(status: selected!['status']),
-                    ),
-                    StudentSectionCard(
-                      title: 'Request review',
-                      icon: Icons.fact_check_outlined,
-                      child: detail(),
-                    ),
-                  ],
-                );
-        }
         if (selected == null) {
-          return const StudentEmptyState(
+          return StudentEmptyState(
             title: 'Request unavailable',
-            message: 'Return to My requests and select a request to view it.',
+            message: staff
+                ? 'Return to the request queue and select a request.'
+                : 'Return to My requests and select a request to view it.',
           );
         }
         return Column(
@@ -1594,14 +2193,10 @@ class _TrackerHomeState extends State<TrackerHome> {
             StudentPageHeader(
               title: selected!['request_number'],
               subtitle:
-                  '${selected!['service']['version']['name']} • request details',
+                  '${selected!['service']['version']['name']} • ${staff ? "registrar review" : "request details"}',
               trailing: StudentStatusBadge(status: selected!['status']),
             ),
-            StudentSectionCard(
-              title: 'Request details',
-              icon: Icons.description_outlined,
-              child: detail(),
-            ),
+            detail(),
           ],
         );
       case 'Requests':
@@ -1770,33 +2365,13 @@ class _TrackerHomeState extends State<TrackerHome> {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       if (success != null)
-        Container(
-          margin: const EdgeInsets.only(bottom: StudentSpace.sectionGap),
-          padding: const EdgeInsets.all(StudentSpace.compact),
-          decoration: BoxDecoration(
-            color: StudentColors.greenTint,
-            borderRadius: BorderRadius.circular(StudentRadius.control),
-          ),
-          child: Semantics(
-            liveRegion: true,
-            child: Text(
-              success!,
-              style: const TextStyle(
-                color: StudentColors.green,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
+        StudentFeedbackBanner(message: success!, success: true),
       if (error != null && !busy)
-        Padding(
-          padding: const EdgeInsets.only(bottom: StudentSpace.sectionGap),
-          child: StudentErrorState(message: error!, onRetry: () => run(load)),
-        ),
+        StudentErrorState(message: error!, onRetry: () => run(load)),
       if (busy && data == null && screen != 'Form')
-        const StudentLoadingState()
+        StudentLoadingState(dashboard: screen == 'Dashboard')
       else
-        content(),
+        StudentPageEntrance(key: ValueKey(screen), child: content()),
     ],
   );
 
@@ -1804,28 +2379,13 @@ class _TrackerHomeState extends State<TrackerHome> {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       if (success != null)
-        StudentSectionCard(
-          padding: const EdgeInsets.all(StudentSpace.medium),
-          child: Semantics(
-            liveRegion: true,
-            child: Text(
-              success!,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: StudentColors.green,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
+        StudentFeedbackBanner(message: success!, success: true),
       if (error != null && !busy)
-        Padding(
-          padding: const EdgeInsets.only(bottom: StudentSpace.sectionGap),
-          child: StudentErrorState(message: error!, onRetry: () => run(load)),
-        ),
+        StudentErrorState(message: error!, onRetry: () => run(load)),
       if (busy && data == null && screen != 'Detail')
-        const StudentLoadingState()
+        StudentLoadingState(dashboard: screen == 'Dashboard')
       else
-        content(),
+        StudentPageEntrance(key: ValueKey(screen), child: content()),
     ],
   );
 
@@ -1886,13 +2446,16 @@ class _TrackerHomeState extends State<TrackerHome> {
                         Text(
                           'Student Document Request Tracker',
                           textAlign: TextAlign.center,
-                          style: StudentTheme.data.textTheme.headlineSmall,
+                          style: StudentTheme.data.textTheme.headlineMedium,
                         ),
                         const SizedBox(height: 7),
                         const Text(
                           'Development environment • test accounts',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: StudentColors.muted),
+                          style: TextStyle(
+                            color: StudentColors.muted,
+                            height: 1.45,
+                          ),
                         ),
                         const SizedBox(height: StudentSpace.page),
                         TextFormField(
@@ -1969,10 +2532,10 @@ class _TrackerHomeState extends State<TrackerHome> {
                             ),
                           ),
                         const SizedBox(height: StudentSpace.sectionGap),
-                        if (busy) const LinearProgressIndicator(),
-                        FilledButton(
-                          onPressed: busy ? null : signIn,
-                          child: const Text('Sign in'),
+                        StudentActionButton(
+                          loading: busy,
+                          label: 'Sign in',
+                          onPressed: signIn,
                         ),
                         TextButton(
                           onPressed: busy ? null : registerAccount,

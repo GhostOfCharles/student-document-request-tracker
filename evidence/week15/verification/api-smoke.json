@@ -1,0 +1,56 @@
+[
+  {
+    "timestamp": "2026-11-15T05:06:59.296148+00:00",
+    "check": "CSRF binding",
+    "http_status": 200,
+    "result": "PASS"
+  },
+  {
+    "timestamp": "2026-11-15T05:06:59.398147+00:00",
+    "check": "real MySQL student login",
+    "http_status": 200,
+    "result": "PASS"
+  },
+  {
+    "timestamp": "2026-11-15T05:06:59.428281+00:00",
+    "check": "published MySQL services",
+    "http_status": 200,
+    "result": "PASS"
+  },
+  {
+    "timestamp": "2026-11-15T05:06:59.480281+00:00",
+    "check": "role-aware dashboard",
+    "http_status": 200,
+    "result": "PASS"
+  },
+  {
+    "timestamp": "2026-11-15T05:06:59.486279+00:00",
+    "check": "student denied staff automation",
+    "http_status": 403,
+    "result": "PASS"
+  },
+  {
+    "timestamp": "2026-11-15T05:06:59.488280+00:00",
+    "check": "unknown API stays 404",
+    "http_status": 404,
+    "result": "PASS"
+  },
+  {
+    "timestamp": "2026-11-15T05:06:59.490281+00:00",
+    "check": "renew CSRF after login",
+    "http_status": 200,
+    "result": "PASS"
+  },
+  {
+    "timestamp": "2026-11-15T05:06:59.498280+00:00",
+    "check": "session revoked on logout",
+    "http_status": 204,
+    "result": "PASS"
+  },
+  {
+    "timestamp": "2026-11-15T05:06:59.531278+00:00",
+    "check": "revoked session denied",
+    "http_status": 401,
+    "result": "PASS"
+  }
+]

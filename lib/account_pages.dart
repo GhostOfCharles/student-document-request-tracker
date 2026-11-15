@@ -41,7 +41,7 @@ class _RegisterPageState extends State<RegisterPage> {
   Future<void> submit() async {
     if (!form.currentState!.validate()) return;
     if (!accepted) {
-      setState(() => error = 'Confirm that this is a development account.');
+      setState(() => error = 'Please agree to the Terms of Service to continue.');
       return;
     }
     setState(() {
@@ -81,7 +81,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Text(
-                    'Development registration uses test information. Student numbers are not verified.',
+                    'Register for an account to request and track university documents.',
                   ),
                   const SizedBox(height: StudentSpace.sectionGap),
                   TextFormField(
@@ -154,7 +154,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     contentPadding: EdgeInsets.zero,
                     value: accepted,
                     title: const Text(
-                      'I understand this account is for development and testing.',
+                      'I agree to the Terms of Service and Privacy Policy.',
                     ),
                     onChanged: (v) => setState(() => accepted = v ?? false),
                   ),
@@ -165,10 +165,11 @@ class _RegisterPageState extends State<RegisterPage> {
                         color: Theme.of(context).colorScheme.error,
                       ),
                     ),
-                  if (busy) const LinearProgressIndicator(),
-                  FilledButton(
-                    onPressed: busy ? null : submit,
-                    child: const Text('Create account'),
+                  StudentActionButton(
+                    loading: busy,
+                    label: 'Create account',
+                    kind: StudentActionKind.primary,
+                    onPressed: submit,
                   ),
                 ],
               ),
@@ -208,6 +209,7 @@ class _AccountPageState extends State<AccountPage> {
   final password = TextEditingController();
   final confirmation = TextEditingController();
   bool busy = false;
+  String? pendingAction;
   String? error;
   String? success;
 
@@ -231,6 +233,7 @@ class _AccountPageState extends State<AccountPage> {
     if (!profileForm.currentState!.validate()) return;
     setState(() {
       busy = true;
+      pendingAction = 'profile';
       error = null;
       success = null;
     });
@@ -248,7 +251,12 @@ class _AccountPageState extends State<AccountPage> {
     } catch (e) {
       if (mounted) setState(() => error = e.toString());
     } finally {
-      if (mounted) setState(() => busy = false);
+      if (mounted) {
+        setState(() {
+          busy = false;
+          pendingAction = null;
+        });
+      }
     }
   }
 
@@ -256,6 +264,7 @@ class _AccountPageState extends State<AccountPage> {
     if (!passwordForm.currentState!.validate()) return;
     setState(() {
       busy = true;
+      pendingAction = 'password';
       error = null;
       success = null;
     });
@@ -276,7 +285,12 @@ class _AccountPageState extends State<AccountPage> {
     } catch (e) {
       if (mounted) setState(() => error = e.toString());
     } finally {
-      if (mounted) setState(() => busy = false);
+      if (mounted) {
+        setState(() {
+          busy = false;
+          pendingAction = null;
+        });
+      }
     }
   }
 
@@ -348,9 +362,11 @@ class _AccountPageState extends State<AccountPage> {
                             ),
                           ),
                           const SizedBox(height: StudentSpace.itemGap),
-                          FilledButton(
+                          StudentActionButton(
+                            loading: pendingAction == 'profile',
+                            label: 'Save contact details',
+                            kind: StudentActionKind.primary,
                             onPressed: busy ? null : save,
-                            child: const Text('Save contact details'),
                           ),
                         ],
                       ),
@@ -401,9 +417,11 @@ class _AccountPageState extends State<AccountPage> {
                               : null,
                         ),
                         const SizedBox(height: StudentSpace.itemGap),
-                        OutlinedButton(
+                        StudentActionButton(
+                          loading: pendingAction == 'password',
+                          label: 'Change password',
+                          kind: StudentActionKind.secondary,
                           onPressed: busy ? null : changePassword,
-                          child: const Text('Change password'),
                         ),
                       ],
                     ),
@@ -417,7 +435,6 @@ class _AccountPageState extends State<AccountPage> {
                     ),
                   ),
                 if (success != null) Text(success!),
-                if (busy) const LinearProgressIndicator(),
               ],
             ),
           ),

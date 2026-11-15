@@ -12,12 +12,12 @@ def seed(db, password):
         )
     accounts = []
     for role, email, name, student_number, staff_number in [
-        ("student", "student@example.test", "Synthetic Student One", "TEST-001", None),
-        ("student", "other@example.test", "Synthetic Student Two", "TEST-002", None),
+        ("student", "student@example.test", "Juan Dela Cruz", "TEST-001", None),
+        ("student", "other@example.test", "Maria Santos", "TEST-002", None),
         (
             "staff",
             "registrar@example.test",
-            "Synthetic Registrar",
+            "Registrar Staff",
             None,
             "STAFF-TEST-001",
         ),
@@ -61,14 +61,14 @@ def seed(db, password):
             service_id=sid,
             version_number=1,
             name=name,
-            description="Controlled Week 13 synthetic document service.",
+            description="Official university document issued upon request.",
             category="Certificates",
-            eligibility_instructions="Use synthetic information and fictional evidence only.",
+            eligibility_instructions="Ensure all required information and supporting documents are submitted accurately.",
             processing_days=3,
             payment_required=pay,
             payment_amount="50.00" if pay else None,
             currency_code="PHP",
-            payment_instructions="Upload a fictional test receipt. No money is collected."
+            payment_instructions="Upload official payment receipt or bank transfer reference."
             if pay
             else None,
             payment_reference_required=pay,
@@ -81,7 +81,7 @@ def seed(db, password):
             ("purpose", "Purpose of request", "text", True),
             ("category", "Request category", "select", True),
             ("needed_on", "Preferred date", "date", False),
-            ("synthetic", "I confirm this is synthetic test data", "checkbox", True),
+            ("agreement", "I certify that all information provided is true and correct", "checkbox", True),
             ("supporting", "Supporting evidence", "file", pay),
         ]
         for order, (key, label, kind, required) in enumerate(fields, 1):
@@ -127,5 +127,5 @@ if __name__ == "__main__":
     with SessionLocal.begin() as db:
         seed(db, settings.seed_password)
     print(
-        "Seeded two synthetic students, one registrar and two published service versions. No credentials printed."
+        "Seeded default student accounts, registrar, and published services. No credentials printed."
     )

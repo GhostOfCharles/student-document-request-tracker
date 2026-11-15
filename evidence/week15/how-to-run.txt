@@ -1,0 +1,46 @@
+========================================================================
+STUDENT DOCUMENT REQUEST TRACKER - HOW TO RUN
+========================================================================
+
+All commands should be executed from the project directory:
+cd "student_document_request_tracker"
+
+Make sure MySQL (Laragon / 127.0.0.1:3306) is running.
+
+------------------------------------------------------------------------
+1. FASTAPI BACKEND (Terminal 1)
+------------------------------------------------------------------------
+$env:PYTHONPATH = 'backend'
+& backend/.venv/Scripts/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+
+FastAPI will serve:
+- REST API: http://localhost:8000/api/v1
+- Interactive Swagger docs: http://localhost:8000/docs
+- Built Flutter Web frontend: http://localhost:8000
+
+------------------------------------------------------------------------
+2. AUTOMATION SCHEDULER (Terminal 2 - optional for automated background tasks)
+------------------------------------------------------------------------
+$env:PYTHONPATH = 'backend'
+& backend/.venv/Scripts/python.exe -m app.automation.scheduler
+
+------------------------------------------------------------------------
+3. FLUTTER WEB DEVELOPMENT (Terminal 3 - for hot reload)
+------------------------------------------------------------------------
+flutter run -d chrome --web-port 5173 --dart-define=API_BASE=http://localhost:8000/api/v1
+(or with `-d edge` or `-d web-server --web-hostname localhost`)
+
+------------------------------------------------------------------------
+4. REBUILDING FLUTTER WEB ASSETS FOR PRODUCTION / BACKEND HOSTING
+------------------------------------------------------------------------
+flutter build web --no-wasm-dry-run
+
+------------------------------------------------------------------------
+CONTROLLED DEVELOPMENT ACCOUNTS
+------------------------------------------------------------------------
+Password for all seed accounts (from .env): @7B!bP1Pzd*RAXy8#4ItSz@p
+
+- Student 1: TEST-001 (or student@example.test)
+- Student 2: TEST-002 (or other@example.test)
+- Registrar: registrar@example.test
+========================================================================

@@ -1,34 +1,563 @@
 import 'package:flutter/material.dart';
 
+abstract final class StudentMotion {
+  static Duration duration(BuildContext context) =>
+      MediaQuery.disableAnimationsOf(context)
+      ? Duration.zero
+      : const Duration(milliseconds: 200);
+}
+
+class StudentDetailValue extends StatelessWidget {
+  final String label;
+  final String value;
+  const StudentDetailValue({
+    super.key,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: StudentSpace.itemGap),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+        const SizedBox(height: StudentSpace.micro),
+        SelectableText(value, style: Theme.of(context).textTheme.bodyLarge),
+      ],
+    ),
+  );
+}
+
+class StudentFormSurface extends StatelessWidget {
+  final Widget child;
+  final IconData? icon;
+  const StudentFormSurface({super.key, required this.child, this.icon});
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.topLeft,
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 840),
+      child: StudentSectionCard(icon: icon, child: child),
+    ),
+  );
+}
+
+class StudentTimelineItem extends StatelessWidget {
+  final String status;
+  final String date;
+  final String remarks;
+  final bool last;
+  const StudentTimelineItem({
+    super.key,
+    required this.status,
+    required this.date,
+    required this.remarks,
+    required this.last,
+  });
+
+  @override
+  Widget build(BuildContext context) => Stack(
+    children: [
+      if (!last)
+        Positioned(
+          left: 10,
+          top: 24,
+          bottom: 0,
+          child: Container(width: 1, color: StudentColors.border),
+        ),
+      const Positioned(
+        left: 0,
+        top: 2,
+        child: Icon(
+          Icons.check_circle_outline,
+          size: 22,
+          color: StudentColors.primary,
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.only(
+          left: 36,
+          bottom: StudentSpace.sectionGap,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            StudentStatusBadge(status: status),
+            const SizedBox(height: StudentSpace.tight),
+            Text(date, style: Theme.of(context).textTheme.bodySmall),
+            if (remarks.isNotEmpty) ...[
+              const SizedBox(height: StudentSpace.micro),
+              Text(remarks, style: Theme.of(context).textTheme.bodyMedium),
+            ],
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+class StudentDocumentCard extends StatelessWidget {
+  final String filename;
+  final int sizeBytes;
+  final VoidCallback onOpen;
+  final String? label;
+
+  const StudentDocumentCard({
+    super.key,
+    required this.filename,
+    required this.sizeBytes,
+    required this.onOpen,
+    this.label,
+  });
+
+  String get _formattedSize {
+    if (sizeBytes < 1024) return '$sizeBytes B';
+    if (sizeBytes < 1024 * 1024) {
+      return '${(sizeBytes / 1024).toStringAsFixed(1)} KB';
+    }
+    return '${(sizeBytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+  }
+
+  bool get _isPdf => filename.toLowerCase().endsWith('.pdf');
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: StudentColors.background,
+        borderRadius: BorderRadius.circular(StudentRadius.control),
+        border: Border.all(color: StudentColors.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: _isPdf ? StudentColors.redTint : StudentColors.blueTint,
+              borderRadius: BorderRadius.circular(StudentRadius.iconTile),
+            ),
+            child: Icon(
+              _isPdf
+                  ? Icons.picture_as_pdf_outlined
+                  : Icons.insert_drive_file_outlined,
+              color: _isPdf ? StudentColors.red : StudentColors.primary,
+              size: StudentSize.icon,
+            ),
+          ),
+          const SizedBox(width: StudentSpace.itemGap),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (label != null)
+                  Text(
+                    label!,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: StudentColors.muted,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                Text(
+                  filename,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: StudentColors.text,
+                  ),
+                ),
+                Text(
+                  _formattedSize,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: StudentColors.muted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: StudentSpace.tight),
+          FilledButton.tonalIcon(
+            onPressed: onOpen,
+            icon: const Icon(Icons.open_in_new, size: 15),
+            label: const Text('View'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class StudentPropertyGrid extends StatelessWidget {
+  final List<(String, String)> items;
+  const StudentPropertyGrid({super.key, required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 480;
+        return Wrap(
+          spacing: StudentSpace.card,
+          runSpacing: StudentSpace.itemGap,
+          children: [
+            for (final (label, value) in items)
+              SizedBox(
+                width: isWide
+                    ? (constraints.maxWidth - StudentSpace.card) / 2
+                    : constraints.maxWidth,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.6,
+                          color: StudentColors.muted,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      SelectableText(
+                        value,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: StudentColors.text,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class StudentMilestoneStepper extends StatelessWidget {
+  final String status;
+  const StudentMilestoneStepper({super.key, required this.status});
+
+  static const _milestones = [
+    ('Submitted', ['submitted']),
+    ('Under Review', ['under_review', 'needs_correction']),
+    ('Processing', ['processing']),
+    ('Ready for Release', ['ready_for_release']),
+    ('Completed', ['released', 'completed']),
+  ];
+
+  int get _currentIndex {
+    final s = status.toLowerCase();
+    if (s == 'rejected' || s == 'cancelled') return 1;
+    for (var i = 0; i < _milestones.length; i++) {
+      if (_milestones[i].$2.contains(s)) return i;
+    }
+    return 0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final active = _currentIndex;
+    final isNegative =
+        status.toLowerCase() == 'rejected' ||
+        status.toLowerCase() == 'cancelled';
+    final isCorrection = status.toLowerCase() == 'needs_correction';
+
+    return Column(
+      children: [
+        for (var i = 0; i < _milestones.length; i++) ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Column(
+                children: [
+                  Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isNegative && i == active
+                          ? StudentColors.redTint
+                          : (isCorrection && i == active)
+                          ? StudentColors.amberTint
+                          : (active > i)
+                          ? StudentColors.greenTint
+                          : (active == i)
+                          ? StudentColors.blueTint
+                          : StudentColors.background,
+                      border: Border.all(
+                        color: isNegative && i == active
+                            ? StudentColors.red
+                            : (isCorrection && i == active)
+                            ? StudentColors.amber
+                            : (active > i)
+                            ? StudentColors.green
+                            : (active == i)
+                            ? StudentColors.primary
+                            : StudentColors.border,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        isNegative && i == active
+                            ? Icons.close
+                            : (isCorrection && i == active)
+                            ? Icons.priority_high
+                            : (active > i)
+                            ? Icons.check
+                            : (active == i)
+                            ? Icons.circle
+                            : Icons.circle_outlined,
+                        size: (active == i && !isNegative && !isCorrection)
+                            ? 10
+                            : 14,
+                        color: isNegative && i == active
+                            ? StudentColors.red
+                            : (isCorrection && i == active)
+                            ? StudentColors.amber
+                            : (active > i)
+                            ? StudentColors.green
+                            : (active == i)
+                            ? StudentColors.primary
+                            : StudentColors.muted,
+                      ),
+                    ),
+                  ),
+                  if (i < _milestones.length - 1)
+                    Container(
+                      width: 2,
+                      height: 26,
+                      color: active > i
+                          ? StudentColors.green
+                          : StudentColors.border,
+                    ),
+                ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 3),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _milestones[i].$1,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: (active == i)
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: (active == i)
+                              ? StudentColors.text
+                              : (active > i)
+                              ? StudentColors.text
+                              : StudentColors.muted,
+                        ),
+                      ),
+                      if (active == i)
+                        Text(
+                          isCorrection
+                              ? 'Correction required'
+                              : isNegative
+                              ? _label(status)
+                              : 'Current phase',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isCorrection
+                                ? StudentColors.amber
+                                : isNegative
+                                ? StudentColors.red
+                                : StudentColors.primary,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  static String _label(String s) => s
+      .split('_')
+      .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+      .join(' ');
+}
+
+class StudentPageEntrance extends StatelessWidget {
+  final Widget child;
+  const StudentPageEntrance({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
+    tween: Tween(begin: 0, end: 1),
+    duration: StudentMotion.duration(context),
+    curve: Curves.easeOutCubic,
+    child: child,
+    builder: (context, value, child) => Opacity(
+      opacity: value,
+      child: Transform.translate(
+        offset: Offset(0, 6 * (1 - value)),
+        child: child,
+      ),
+    ),
+  );
+}
+
+class StudentResponsiveGrid extends StatelessWidget {
+  final List<Widget> children;
+  const StudentResponsiveGrid({super.key, required this.children});
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, size) {
+      final columns = size.maxWidth >= 1000
+          ? 4
+          : size.maxWidth >= 340
+          ? 2
+          : 1;
+      final width =
+          (size.maxWidth - (columns - 1) * StudentSpace.medium) / columns;
+      return Wrap(
+        spacing: StudentSpace.medium,
+        runSpacing: StudentSpace.medium,
+        children: [
+          for (final child in children) SizedBox(width: width, child: child),
+        ],
+      );
+    },
+  );
+}
+
+class StudentRequestRow extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  const StudentRequestRow({
+    super.key,
+    required this.child,
+    required this.padding,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: padding,
+    decoration: const BoxDecoration(
+      border: Border(bottom: BorderSide(color: StudentColors.border)),
+    ),
+    child: child,
+  );
+}
+
+class StudentSkeleton extends StatefulWidget {
+  final double height;
+  final double? width;
+  const StudentSkeleton({super.key, required this.height, this.width});
+  @override
+  State<StudentSkeleton> createState() => _StudentSkeletonState();
+}
+
+class _StudentSkeletonState extends State<StudentSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1000),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      pulse.stop();
+      pulse.value = 0.5;
+    } else {
+      pulse.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.centerLeft,
+    child: AnimatedBuilder(
+      animation: pulse,
+      builder: (context, _) => Container(
+        height: widget.height,
+        width: widget.width ?? double.infinity,
+        decoration: BoxDecoration(
+          color: Color.lerp(
+            StudentColors.background,
+            StudentColors.border,
+            0.3 + 0.5 * pulse.value,
+          ),
+          borderRadius: BorderRadius.circular(StudentRadius.control),
+        ),
+      ),
+    ),
+  );
+}
+
 abstract final class StudentColors {
-  static const primary = Color(0xFF3157E8);
-  static const primaryDark = Color(0xFF2447D8);
-  static const background = Color(0xFFF4F6FA);
+  // Calm academic palette: blue is the action color, while status colors are
+  // reserved for meaning. These are product colors, not ULS brand colors.
+  static const primary = Color(0xFF214F7B);
+  static const primaryDark = Color(0xFF183C5C);
+  static const primaryTint = Color(0xFFE9F1F8);
+  static const background = Color(0xFFF4F6F8);
   static const surface = Colors.white;
-  static const text = Color(0xFF172033);
-  static const muted = Color(0xFF697386);
-  static const border = Color(0xFFE5E9F1);
-  static const green = Color(0xFF168447);
-  static const greenTint = Color(0xFFE5F6EC);
-  static const red = Color(0xFFC53A43);
-  static const redTint = Color(0xFFFDEBEC);
-  static const blueTint = Color(0xFFE9F0FF);
-  static const amber = Color(0xFF96620A);
-  static const amberTint = Color(0xFFFFF4D9);
-  static const purple = Color(0xFF6741C8);
-  static const purpleTint = Color(0xFFF0EBFF);
+  static const text = Color(0xFF172A3E);
+  static const muted = Color(0xFF586A7B);
+  static const border = Color(0xFFDDE5EC);
+  static const green = Color(0xFF276B4A);
+  static const greenTint = Color(0xFFE9F4ED);
+  static const red = Color(0xFFB4424B);
+  static const redTint = Color(0xFFF8E9EA);
+  static const blueTint = primaryTint;
+  static const amber = Color(0xFF805D19);
+  static const amberTint = Color(0xFFF8F1E2);
+  static const shadow = Color(0x0B172A3E);
 }
 
 abstract final class StudentSpace {
   static const micro = 4.0;
-  static const service = 10.0;
+  static const service = 12.0;
   static const tight = 8.0;
-  static const compact = 14.0;
+  static const compact = 16.0;
   static const medium = 16.0;
-  static const page = 28.0;
+  static const page = 32.0;
   static const loginCard = 32.0;
-  static const card = 22.0;
-  static const sectionGap = 20.0;
+  static const card = 24.0;
+  static const sectionGap = 24.0;
   static const itemGap = 12.0;
 }
 
@@ -38,9 +567,9 @@ abstract final class StudentSize {
   static const navigationIcon = 38.0;
   static const serviceIcon = 44.0;
   static const loginLogo = 58.0;
-  static const sidebar = 248.0;
+  static const sidebar = 252.0;
   static const drawer = 264.0;
-  static const topBar = 72.0;
+  static const topBar = 70.0;
   static const loginCardWidth = 470.0;
   static const dialogWidth = 600.0;
   static const dialogHorizontalAllowance = 40.0;
@@ -50,10 +579,10 @@ abstract final class StudentSize {
 
 abstract final class StudentRadius {
   static const iconTile = 11.0;
-  static const logo = 12.0;
+  static const logo = 13.0;
   static const loginLogo = 17.0;
-  static const card = 18.0;
-  static const control = 12.0;
+  static const card = 16.0;
+  static const control = 10.0;
   static const pill = 999.0;
 }
 
@@ -66,6 +595,9 @@ class StudentTheme {
         ).copyWith(
           primary: StudentColors.primary,
           onPrimary: Colors.white,
+          primaryContainer: StudentColors.primaryTint,
+          onPrimaryContainer: StudentColors.text,
+          secondary: Color(0xFF4B6C7D),
           surface: StudentColors.surface,
           error: StudentColors.red,
         );
@@ -75,20 +607,42 @@ class StudentTheme {
     );
     return ThemeData(
       useMaterial3: true,
+      fontFamily: 'Inter',
       colorScheme: scheme,
       scaffoldBackgroundColor: StudentColors.background,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: StudentColors.background,
+        foregroundColor: StudentColors.text,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: TextStyle(
+          color: StudentColors.text,
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
       textTheme: const TextTheme(
+        headlineLarge: TextStyle(
+          color: StudentColors.text,
+          fontSize: 32,
+          height: 1.15,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.55,
+        ),
         headlineMedium: TextStyle(
           color: StudentColors.text,
           fontSize: 28,
           height: 1.2,
           fontWeight: FontWeight.w700,
+          letterSpacing: -0.35,
         ),
         headlineSmall: TextStyle(
           color: StudentColors.text,
-          fontSize: 23,
+          fontSize: 24,
           height: 1.25,
           fontWeight: FontWeight.w700,
+          letterSpacing: -0.2,
         ),
         titleLarge: TextStyle(
           color: StudentColors.text,
@@ -100,16 +654,34 @@ class StudentTheme {
           fontSize: 15,
           fontWeight: FontWeight.w600,
         ),
-        bodyLarge: TextStyle(color: StudentColors.text, fontSize: 15),
-        bodyMedium: TextStyle(color: StudentColors.text, fontSize: 14),
-        bodySmall: TextStyle(color: StudentColors.muted, fontSize: 12),
+        bodyLarge: TextStyle(
+          color: StudentColors.text,
+          fontSize: 15,
+          height: 1.5,
+        ),
+        bodyMedium: TextStyle(
+          color: StudentColors.text,
+          fontSize: 15,
+          height: 1.5,
+        ),
+        bodySmall: TextStyle(
+          color: StudentColors.muted,
+          fontSize: 13,
+          height: 1.4,
+        ),
+        labelLarge: TextStyle(
+          color: StudentColors.text,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: StudentColors.surface,
+        isDense: false,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
-          vertical: 15,
+          vertical: 14,
         ),
         border: outline,
         enabledBorder: outline,
@@ -128,8 +700,8 @@ class StudentTheme {
         style: FilledButton.styleFrom(
           backgroundColor: StudentColors.primary,
           foregroundColor: Colors.white,
-          minimumSize: const Size(48, 48),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          minimumSize: const Size(48, 46),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(StudentRadius.control),
           ),
@@ -139,7 +711,7 @@ class StudentTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: StudentColors.primary,
           foregroundColor: Colors.white,
-          minimumSize: const Size(48, 48),
+          minimumSize: const Size(48, 46),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(StudentRadius.control),
           ),
@@ -148,8 +720,8 @@ class StudentTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: StudentColors.primary,
-          minimumSize: const Size(44, 44),
-          side: const BorderSide(color: StudentColors.border),
+          minimumSize: const Size(44, 46),
+          side: const BorderSide(color: Color(0xFFC9D5E0)),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(StudentRadius.control),
           ),
@@ -182,7 +754,9 @@ class StudentTheme {
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(StudentRadius.card),
+          side: const BorderSide(color: StudentColors.border),
         ),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
         titleTextStyle: const TextStyle(
           color: StudentColors.text,
           fontSize: 20,
@@ -190,8 +764,8 @@ class StudentTheme {
         ),
         contentTextStyle: const TextStyle(
           color: StudentColors.text,
-          fontSize: 14,
-          height: 1.45,
+          fontSize: 15,
+          height: 1.5,
         ),
       ),
       popupMenuTheme: PopupMenuThemeData(
@@ -203,6 +777,41 @@ class StudentTheme {
       ),
       dropdownMenuTheme: const DropdownMenuThemeData(
         inputDecorationTheme: InputDecorationTheme(filled: true),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: StudentColors.text,
+        contentTextStyle: const TextStyle(color: Colors.white, fontSize: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(StudentRadius.control),
+        ),
+      ),
+      tooltipTheme: TooltipThemeData(
+        decoration: BoxDecoration(
+          color: StudentColors.text,
+          borderRadius: BorderRadius.circular(StudentRadius.iconTile),
+        ),
+        textStyle: const TextStyle(color: Colors.white, fontSize: 12),
+      ),
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? StudentColors.primary
+              : null,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? Colors.white
+              : StudentColors.muted,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? StudentColors.primary
+              : StudentColors.border,
+        ),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: StudentColors.blueTint,
@@ -246,8 +855,12 @@ class StudentPageHeader extends StatelessWidget {
           children: [
             Text(title, style: Theme.of(context).textTheme.headlineSmall),
             if (subtitle != null) ...[
-              const SizedBox(height: 5),
-              Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium),
+              const SizedBox(height: StudentSpace.tight),
+              Text(
+                subtitle!,
+                style: Theme.of(context).textTheme.bodyMedium
+                    ?.copyWith(color: StudentColors.muted),
+              ),
             ],
           ],
         );
@@ -296,9 +909,9 @@ class StudentSectionCard extends StatelessWidget {
       border: Border.all(color: StudentColors.border),
       boxShadow: const [
         BoxShadow(
-          color: Color(0x0A14213D),
-          blurRadius: 22,
-          offset: Offset(0, 7),
+          color: StudentColors.shadow,
+          blurRadius: 24,
+          offset: Offset(0, 6),
         ),
       ],
     ),
@@ -316,7 +929,7 @@ class StudentSectionCard extends StatelessWidget {
                   height: StudentSize.statusIcon,
                   decoration: BoxDecoration(
                     color: StudentColors.blueTint,
-                    borderRadius: BorderRadius.circular(StudentRadius.control),
+                    borderRadius: BorderRadius.circular(StudentRadius.pill),
                   ),
                   child: Icon(
                     icon,
@@ -380,8 +993,8 @@ class StudentStatCard extends StatelessWidget {
       border: Border.all(color: StudentColors.border),
       boxShadow: const [
         BoxShadow(
-          color: Color(0x0814213D),
-          blurRadius: 16,
+          color: StudentColors.shadow,
+          blurRadius: 20,
           offset: Offset(0, 4),
         ),
       ],
@@ -420,58 +1033,37 @@ class StudentStatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final key = status.toLowerCase();
-    final positive = [
-      'completed',
-      'verified',
-      'succeeded',
-      'released',
-      'resolved_manually',
-      'resolved',
-    ];
-    final negative = [
-      'rejected',
-      'cancelled',
-      'permanent_failure',
-      'failed',
-      'failed_permanently',
-      'critical',
-      'escalation',
-      'escalated',
-    ];
-    final warning = [
-      'needs_correction',
-      'overdue',
-      'stalled',
-      'aging',
-      'warning',
-      'escalated',
-      'aging',
-    ];
-    final neutral = [
-      'not_reviewed',
-      'unverified',
-      'info',
-      'informational',
-      'no_payment',
-    ];
-    final color = positive.contains(key)
-        ? StudentColors.green
-        : negative.contains(key)
-        ? StudentColors.red
-        : warning.contains(key)
-        ? StudentColors.amber
-        : neutral.contains(key)
-        ? StudentColors.muted
-        : StudentColors.primary;
-    final tint = positive.contains(key)
-        ? StudentColors.greenTint
-        : negative.contains(key)
-        ? StudentColors.redTint
-        : warning.contains(key)
-        ? StudentColors.amberTint
-        : neutral.contains(key)
-        ? StudentColors.background
-        : StudentColors.blueTint;
+    final (color, tint) = switch (key) {
+      'completed' ||
+      'verified' ||
+      'succeeded' ||
+      'released' ||
+      'resolved_manually' ||
+      'resolved' ||
+      'approved' => (StudentColors.green, StudentColors.greenTint),
+      'rejected' ||
+      'cancelled' ||
+      'permanent_failure' ||
+      'failed' ||
+      'failed_permanently' ||
+      'critical' ||
+      'dead_letter' => (StudentColors.red, StudentColors.redTint),
+      'needs_correction' ||
+      'overdue' ||
+      'stalled' ||
+      'aging' ||
+      'warning' ||
+      'escalation' ||
+      'escalated' ||
+      'unverified' ||
+      'human_action_required' ||
+      'pending_review' => (StudentColors.amber, StudentColors.amberTint),
+      'not_reviewed' ||
+      'no_payment' ||
+      'not_required' ||
+      'inactive' => (StudentColors.muted, StudentColors.background),
+      _ => (StudentColors.primary, StudentColors.primaryTint),
+    };
     final label = status
         .split('_')
         .map(
@@ -490,7 +1082,7 @@ class StudentStatusBadge extends StatelessWidget {
         label,
         style: TextStyle(
           color: color,
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -503,6 +1095,58 @@ abstract final class StudentDialogWidth {
       (MediaQuery.sizeOf(context).width - StudentSize.dialogHorizontalAllowance)
           .clamp(0.0, StudentSize.dialogWidth)
           .toDouble();
+}
+
+class StudentFeedbackBanner extends StatelessWidget {
+  final String message;
+  final bool success;
+  const StudentFeedbackBanner({
+    super.key,
+    required this.message,
+    this.success = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = success ? StudentColors.green : StudentColors.red;
+    final tint = success ? StudentColors.greenTint : StudentColors.redTint;
+    return Container(
+      margin: const EdgeInsets.only(bottom: StudentSpace.sectionGap),
+      padding: const EdgeInsets.symmetric(
+        horizontal: StudentSpace.medium,
+        vertical: StudentSpace.compact,
+      ),
+      decoration: BoxDecoration(
+        color: tint,
+        borderRadius: BorderRadius.circular(StudentRadius.control),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
+      ),
+      child: Semantics(
+        liveRegion: true,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 1),
+              child: Icon(
+                success ? Icons.check_circle_outline : Icons.info_outline,
+                color: color,
+                size: StudentSize.icon,
+              ),
+            ),
+            const SizedBox(width: StudentSpace.tight + 2),
+            Expanded(
+              child: Text(
+                message,
+                style: Theme.of(context).textTheme.bodyMedium
+                    ?.copyWith(color: color, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class StudentEmptyState extends StatelessWidget {
@@ -528,7 +1172,8 @@ class StudentEmptyState extends StatelessWidget {
         Text(
           message,
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium,
+          style: Theme.of(context).textTheme.bodyMedium
+              ?.copyWith(color: StudentColors.muted),
         ),
       ],
     ),
@@ -536,11 +1181,42 @@ class StudentEmptyState extends StatelessWidget {
 }
 
 class StudentLoadingState extends StatelessWidget {
-  const StudentLoadingState({super.key});
+  final bool dashboard;
+  const StudentLoadingState({super.key, this.dashboard = false});
   @override
-  Widget build(BuildContext context) => const Padding(
-    padding: EdgeInsets.all(StudentSpace.card),
-    child: Center(child: CircularProgressIndicator()),
+  Widget build(BuildContext context) => Semantics(
+    label: 'Loading content',
+    liveRegion: true,
+    child: ExcludeSemantics(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const StudentSkeleton(height: 28, width: 220),
+          const SizedBox(height: StudentSpace.tight),
+          const StudentSkeleton(height: 16, width: 300),
+          const SizedBox(height: StudentSpace.sectionGap),
+          if (dashboard) ...[
+            StudentResponsiveGrid(
+              children: [
+                for (var i = 0; i < 4; i++)
+                  const StudentSectionCard(child: StudentSkeleton(height: 70)),
+              ],
+            ),
+            const SizedBox(height: StudentSpace.sectionGap),
+          ],
+          StudentSectionCard(
+            child: Column(
+              children: [
+                for (var i = 0; i < 4; i++) ...[
+                  const StudentSkeleton(height: 48),
+                  if (i < 3) const SizedBox(height: StudentSpace.medium),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
   );
 }
 
@@ -554,18 +1230,25 @@ class StudentErrorState extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => StudentSectionCard(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(message, style: const TextStyle(color: StudentColors.red)),
-        const SizedBox(height: StudentSpace.itemGap),
-        OutlinedButton.icon(
-          onPressed: onRetry,
-          icon: const Icon(Icons.refresh),
-          label: const Text('Try again'),
-        ),
-      ],
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: StudentSpace.sectionGap),
+    child: StudentSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            message,
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(color: StudentColors.red),
+          ),
+          const SizedBox(height: StudentSpace.itemGap),
+          OutlinedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Try again'),
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -590,21 +1273,22 @@ class StudentActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final child = loading
-        ? const SizedBox.square(
+    final child = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (loading) ...[
+          const SizedBox.square(
             dimension: StudentSize.icon,
             child: CircularProgressIndicator(strokeWidth: 2),
-          )
-        : Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: StudentSize.icon),
-                const SizedBox(width: StudentSpace.tight),
-              ],
-              Text(label),
-            ],
-          );
+          ),
+          const SizedBox(width: StudentSpace.tight),
+        ] else if (icon != null) ...[
+          Icon(icon, size: StudentSize.icon),
+          const SizedBox(width: StudentSpace.tight),
+        ],
+        Flexible(child: Text(label)),
+      ],
+    );
     final callback = loading ? null : onPressed;
     return switch (kind) {
       StudentActionKind.primary => FilledButton(
@@ -715,7 +1399,7 @@ class StudentAppShell extends StatelessWidget {
                   height: StudentSize.navigationIcon,
                   decoration: BoxDecoration(
                     color: StudentColors.primary,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(StudentRadius.logo),
                   ),
                   child: const Icon(
                     Icons.school_rounded,
@@ -739,7 +1423,7 @@ class StudentAppShell extends StatelessWidget {
               menuLabel,
               style: TextStyle(
                 color: StudentColors.muted,
-                fontSize: 11,
+                fontSize: 13,
                 letterSpacing: 1,
                 fontWeight: FontWeight.w700,
               ),
@@ -751,24 +1435,6 @@ class StudentAppShell extends StatelessWidget {
               child: _navItem(context, name, icon, inDrawer: inDrawer),
             ),
           const Spacer(),
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Container(
-              padding: const EdgeInsets.all(13),
-              decoration: BoxDecoration(
-                color: StudentColors.background,
-                borderRadius: BorderRadius.circular(StudentRadius.control),
-              ),
-              child: const Text(
-                'Development demo\nTest records only',
-                style: TextStyle(
-                  color: StudentColors.muted,
-                  fontSize: 12,
-                  height: 1.5,
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     ),
@@ -804,12 +1470,14 @@ class StudentAppShell extends StatelessWidget {
                     color: active ? Colors.white : StudentColors.muted,
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    name,
-                    style: TextStyle(
-                      color: active ? Colors.white : StudentColors.text,
-                      fontSize: 14,
-                      fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                  Expanded(
+                    child: Text(
+                      name,
+                      style: TextStyle(
+                        color: active ? Colors.white : StudentColors.text,
+                        fontSize: 14,
+                        fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],
@@ -895,11 +1563,11 @@ class StudentAppShell extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: StudentRadius.loginLogo,
-                  backgroundColor: StudentColors.purpleTint,
+                  backgroundColor: StudentColors.primaryTint,
                   child: Text(
                     userName.isEmpty ? 'S' : userName[0].toUpperCase(),
                     style: const TextStyle(
-                      color: StudentColors.purple,
+                      color: StudentColors.primary,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -963,7 +1631,15 @@ class StudentAppShell extends StatelessWidget {
                 child: Column(
                   children: [
                     _topBar(context, compact: compact),
-                    if (busy) const LinearProgressIndicator(minHeight: 2),
+                    SizedBox(
+                      height: 2,
+                      child: AnimatedSwitcher(
+                        duration: StudentMotion.duration(context),
+                        child: busy
+                            ? const LinearProgressIndicator(minHeight: 2)
+                            : const SizedBox.shrink(),
+                      ),
+                    ),
                     Expanded(
                       child: SingleChildScrollView(
                         padding: EdgeInsets.all(

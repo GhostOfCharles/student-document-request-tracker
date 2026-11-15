@@ -9,7 +9,7 @@ from sqlalchemy.exc import OperationalError, SQLAlchemyError
 from app.config import settings, ROOT
 from app import auth, account, services, service_management, requests, files, operations
 
-app = FastAPI(title="Student Document Request Tracker — Week 13", version="0.13.0")
+app = FastAPI(title="Student Document Request Tracker API", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,

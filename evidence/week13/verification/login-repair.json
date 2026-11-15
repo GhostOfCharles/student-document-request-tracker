@@ -1,0 +1,28 @@
+{
+  "timestamp_utc": "2026-11-02T06:36:21.281004+00:00",
+  "base_url": "http://localhost:8000",
+  "checks": [
+    {
+      "check": "incorrect_password_message",
+      "result": "PASS"
+    },
+    {
+      "check": "browser_login",
+      "account": "TEST-001",
+      "result": "PASS",
+      "screenshot": "screenshots/login-repair-student.png"
+    },
+    {
+      "check": "narrow_drawer_navigation",
+      "viewport": "390x844",
+      "result": "PASS",
+      "screenshot": "screenshots/student-redesign-narrow.png"
+    },
+    {
+      "check": "browser_login",
+      "account": "registrar@example.test",
+      "result": "PASS",
+      "screenshot": "screenshots/login-repair-staff.png"
+    }
+  ]
+}

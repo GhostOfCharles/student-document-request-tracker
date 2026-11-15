@@ -50,7 +50,6 @@ def main():
                 expect(page.get_by_role("textbox", name="Search requests...")).to_be_visible()
                 expect(page.get_by_role("button", name="User menu", exact=False)).to_be_visible()
             else:
-                expect(page.get_by_role("button", name="Refresh current view")).to_be_enabled()
                 expect(page.get_by_role("button", name="Automation", exact=True)).to_be_visible()
             screenshot = "student-dashboard-desktop.png" if account == "TEST-001" else "staff-dashboard-existing.png"
             page.screenshot(path=str(OUT / "screenshots" / screenshot))

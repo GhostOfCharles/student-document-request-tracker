@@ -1,0 +1,56 @@
+{
+  "timestamp_utc": "2026-11-15T05:08:55Z",
+  "environment": {
+    "os": "Windows 11",
+    "flutter": "3.47.7",
+    "dart": "3.13.5",
+    "python": "3.12.10",
+    "database": "MySQL 8.4.3 (Laragon)",
+    "browser": "Microsoft Edge (Playwright)"
+  },
+  "results": {
+    "flutter_analyze": {
+      "status": "PASS",
+      "errors": 0,
+      "warnings": 0
+    },
+    "flutter_test": {
+      "status": "PASS",
+      "total": 17,
+      "passed": 17,
+      "failed": 0
+    },
+    "pytest_backend_tests": {
+      "status": "PASS",
+      "total": 13,
+      "passed": 13,
+      "failed": 0
+    },
+    "pytest_week14_tests": {
+      "status": "PASS",
+      "total": 6,
+      "passed": 6,
+      "failed": 0
+    },
+    "api_smoke": {
+      "status": "PASS",
+      "checks": 9,
+      "failed": 0
+    },
+    "login_smoke": {
+      "status": "PASS",
+      "checks": 6,
+      "failed": 0
+    },
+    "staff_design_smoke": {
+      "status": "PASS",
+      "checks": 15,
+      "page_errors": 0
+    },
+    "visual_manifest_views": {
+      "status": "PASS",
+      "views_captured": 7
+    }
+  },
+  "overall_status": "ALL_GREEN"
+}

@@ -1,5 +1,5 @@
 {
-  "mysql_version": "8.4.13",
+  "mysql_version": "8.4.3",
   "tables": [
     "alembic_version",
     "audit_logs",

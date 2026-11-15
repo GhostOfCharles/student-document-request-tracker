@@ -1,4 +1,4 @@
-"""Create provisional, unpublished examples for the local development demo."""
+"""Create draft service templates for service management."""
 
 from sqlalchemy.engine import make_url
 
@@ -21,18 +21,18 @@ def main():
             raise SystemExit("Seed the controlled registrar account first.")
         change(db, m.users, staff["id"], can_manage_services=True)
         audit(db, staff["id"], "demo_service_management_enabled", "user", staff["id"])
-        for code, name in [
-            ("EXAMPLE_ENROLLMENT", "Example Certificate of Enrollment"),
-            ("EXAMPLE_TRANSCRIPT", "Example Transcript of Records"),
+        for code, name, desc in [
+            ("DRAFT_ENROLLMENT", "Certificate of Enrollment (Draft)", "Standard document confirming current term enrollment and course load."),
+            ("DRAFT_TRANSCRIPT", "Transcript of Records (Draft)", "Official academic transcript of completed courses and grades."),
         ]:
             if one(db, m.document_services, m.document_services.c.service_code == code):
                 continue
             config = ServiceConfigurationInput.model_validate({
                 "name": name,
-                "description": "Provisional example only; ULS registrar requirements are not confirmed.",
-                "category": "Example documents",
+                "description": desc,
+                "category": "Academic Records",
                 "eligibility_instructions": (
-                    "Review the requirements, processing estimate and payment rules with the registrar before publishing."
+                    "Review all document requirements, processing timeline, and payment guidelines before publishing."
                 ),
                 "processing_days": 3,
                 "payment": {"required": False, "amount": None, "currency": "PHP",
@@ -41,10 +41,10 @@ def main():
                     {"field_key": "purpose", "label": "Purpose of request", "field_type": "text",
                      "required": True, "max_length": 200, "options": []},
                     {"field_key": "academic_year", "label": "Academic year or term",
-                     "help_text": "Example field; confirm with the registrar.",
+                     "help_text": "Indicate current academic school year and semester.",
                      "field_type": "text", "required": True, "max_length": 100, "options": []},
                     {"field_key": "supporting_document", "label": "Supporting document",
-                     "help_text": "Example only; the registrar must confirm if a file is needed.",
+                     "help_text": "Upload supporting endorsements or identification.",
                      "field_type": "file", "required": False,
                      "allowed_mime_types": ["application/pdf", "image/jpeg", "image/png"],
                      "max_file_size_bytes": 5242880, "options": []},
@@ -56,9 +56,9 @@ def main():
                              version_status="draft", created_by_user_id=staff["id"],
                              row_version=1, **values(config))
             write_fields(db, version_id, config.requirements)
-            audit(db, staff["id"], "example_service_draft_created", "document_service", service_id)
-    print("Enabled the controlled registrar's service-management permission.")
-    print("Provisional example drafts are available for review; none were published.")
+            audit(db, staff["id"], "service_draft_template_created", "document_service", service_id)
+    print("Enabled registrar service-management permission.")
+    print("Draft service templates are available for review; none were published.")
 
 
 if __name__ == "__main__":

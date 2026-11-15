@@ -44,7 +44,10 @@ migrate_working_dir/
 # kept locally. Commit the application source and the public setup README only.
 /how-to-run.txt
 /Namoc, Charles Klyde T/
-/evidence/
+/evidence/*
+!/evidence/week13/
+!/evidence/week14/
+!/evidence/week15/
 /docs/specification/
 
 # Local browser automation artifacts

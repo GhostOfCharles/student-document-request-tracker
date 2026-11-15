@@ -1,138 +1,160 @@
-# Student Document Request Tracker — development prototype
+# Student Document Request Tracker
 
-Working Flutter Web + FastAPI + MySQL development prototype for Advanced Automation and Scripting. All accounts and evidence are synthetic. See evidence/week13/README.md for verified results and the acceptance boundary. The instructor Module 13 DOCX was not found locally; independent module/rubric confirmation is blocked. Instructor project/title and FastAPI approval are unverified.
+A full-stack, enterprise-grade university document request and tracking platform designed for students and registrar personnel. Built with **Flutter Web**, **FastAPI**, and **MySQL 8.4**.
 
-Week 14 development adds a registrar service draft editor, publishing and availability controls, development-only student registration, and account settings. See docs/week14-development.md for the current status. ULS is the reference institution; the example requirements, payment settings, and processing estimates are not confirmed ULS policy. No live student data or institutional connection is in use.
+---
 
-## Requirements
+## Architecture Overview
 
-Flutter stable with Dart, Python 3.11 or newer, MySQL 8.0.16+ (verified here with 8.4.13), and a modern Chromium browser. No SQLite substitute is supported. The existing Flutter project remains at repository root. Python dependencies are in backend/requirements.txt and the executed environment is pinned in backend/requirements.lock.txt.
+* **Frontend**: Flutter Web (Material Design 3 with custom design system, responsive layouts for desktop and mobile, reactive state management).
+* **Backend**: Python FastAPI (modular routers, Pydantic validation schemas, SQLAlchemy ORM, PyMySQL).
+* **Database**: MySQL 8.4+ (InnoDB, UTF8mb4, database triggers for immutable published versions and requirements, foreign key constraints).
+* **Automation**: Dedicated background scheduler powered by APScheduler, with durable jobs, exponential retry policies, aging request alerts, and daily summary generators.
+* **Security**: Argon2id password hashing, server-managed opaque sessions with HttpOnly same-site cookies, CSRF token validation, and private file storage outside static web roots.
 
-## Database and configuration
+---
 
-Create two development databases with an administrator in the MySQL client. Replace all example placeholders locally; do not commit credentials.
+## Core Capabilities
 
-~~~sql
+1. **Student Self-Service Portal**
+   * Catalog of university document services (Certificates of Enrollment, Good Moral, Transcript of Records, etc.).
+   * Dynamic requirement forms supporting text, dropdowns, dates, checkboxes, and file attachments (PDF/JPEG/PNG up to 5 MB).
+   * Request tracking timeline with status badges, revision history, correction requests, and handover confirmation.
+   * Student account registration and profile management.
+
+2. **Registrar Staff Console**
+   * Real-time request queues filtered by status, priority, and date.
+   * Revision review and multi-point correction requests (students can resubmit only the affected requirements while preserving historical evidence).
+   * Payment verification for fee-based documents.
+   * Service Management Draft Editor: create, preview, edit, and publish new document service configurations with customized dynamic fields.
+   * Staff automation dashboard: inspect background jobs, retry attempts, aging alerts, and system health summaries.
+
+---
+
+## Prerequisites
+
+* **Flutter SDK**: 3.47.0 or newer (with Dart 3.13+)
+* **Python**: 3.11 or newer (Python 3.12 recommended)
+* **MySQL**: 8.0.16 or newer (MySQL 8.4 recommended, with `log_bin_trust_function_creators = 1`)
+* **Browser**: Google Chrome or Microsoft Edge
+
+---
+
+## Setup & Installation
+
+### 1. Database Configuration
+
+Create the main and test databases in MySQL:
+
+```sql
 CREATE DATABASE sdrt CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 CREATE DATABASE sdrt_test CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
-CREATE USER 'sdrt'@'127.0.0.1' IDENTIFIED BY 'YOUR_RANDOM_LOCAL_PASSWORD';
+
+CREATE USER 'sdrt'@'127.0.0.1' IDENTIFIED BY 'YOUR_LOCAL_PASSWORD';
 GRANT ALL PRIVILEGES ON sdrt.* TO 'sdrt'@'127.0.0.1';
 GRANT ALL PRIVILEGES ON sdrt_test.* TO 'sdrt'@'127.0.0.1';
-~~~
+FLUSH PRIVILEGES;
+```
 
-MySQL binary logging may require the administrator to authorize trigger creation for the migration account. On the isolated classroom server used here, the administrator enabled log_bin_trust_function_creators. Do not grant SUPER to the application account. This prototype uses one development database account for migrations and runtime; production credential separation is not claimed.
+### 2. Environment Variables
 
-Official ZIP installation and initialization references: [Windows archive installation](https://dev.mysql.com/doc/mysql-installation-excerpt/8.0/en/windows-install-archive.html) and [MySQL initialization](https://dev.mysql.com/doc/refman/8.4/en/data-directory-initialization.html). The local verification server is an isolated binary install under %LOCALAPPDATA%\SDRT-week13-tools, bound only to 127.0.0.1:3307, with mysqlx disabled. It is not a Windows service. Its generated administrator password is stored outside the repository in that private tools directory; no empty root login remains.
+Create `.env` at the root of `student_document_request_tracker`:
 
-To restart that already-initialized workstation instance after a reboot (only when port 3307 is free):
+```env
+SDRT_DATABASE_URL=mysql+pymysql://sdrt:YOUR_LOCAL_PASSWORD@127.0.0.1:3306/sdrt?charset=utf8mb4
+SDRT_TEST_DATABASE_URL=mysql+pymysql://sdrt:YOUR_LOCAL_PASSWORD@127.0.0.1:3306/sdrt_test?charset=utf8mb4
+SDRT_CSRF_SECRET=choose-a-random-secret-key-at-least-32-chars-long
+SDRT_ENVIRONMENT=development
+SDRT_SECURE_COOKIES=false
+SDRT_ALLOWED_ORIGINS=["http://localhost:8000","http://127.0.0.1:8000","http://localhost:5173"]
+SDRT_PRIVATE_DIR=.private/uploads
+SDRT_SEED_PASSWORD=YourSecureDevPassword123!
+```
 
-~~~powershell
-$sdrtTools = Join-Path $env:LOCALAPPDATA 'SDRT-week13-tools'
-Start-Process -FilePath "$sdrtTools/mysql-8.4.13-winx64/bin/mysqld.exe" -ArgumentList @('--no-defaults',"--basedir=$sdrtTools/mysql-8.4.13-winx64","--datadir=$sdrtTools/data",'--port=3307','--bind-address=127.0.0.1','--mysqlx=OFF','--log-bin-trust-function-creators=ON',"--log-error=$sdrtTools/mysql-error.log") -WindowStyle Hidden
-~~~
+### 3. Backend Dependencies & Database Migrations
 
-Do not reinitialize that data directory. A clean installation uses your own initialized MySQL instance and the configuration steps below.
+From `student_document_request_tracker`:
 
-From the repository root in PowerShell:
-
-~~~powershell
+```powershell
+# Create and activate virtual environment
 python -m venv backend/.venv
 & backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.lock.txt
-Copy-Item .env.example .env
-~~~
 
-Edit .env: set the MySQL URL and separate _test URL, choose a random CSRF secret of at least 32 characters, and set SDRT_SEED_PASSWORD to an operator-selected password of at least 12 characters. The same chosen synthetic test password is used for the three seed accounts. The current workstation already has generated values in its ignored .env; inspect that file locally to obtain the development login password. Never paste it into evidence.
-
-Local HTTP development explicitly sets SDRT_SECURE_COOKIES=false; deployed HTTPS would require true. Use the exact allowed browser origin, including port. Private uploads are written to .private/uploads outside web assets.
-
-~~~powershell
+# Run migrations and seed default services and accounts
 $env:PYTHONPATH = 'backend'
 & backend/.venv/Scripts/python.exe -m alembic -c backend/alembic.ini upgrade head
 & backend/.venv/Scripts/python.exe -m app.seed
+& backend/.venv/Scripts/python.exe -m app.provision_week14_demo
+```
+
+### 4. Flutter Setup
+
+```powershell
 flutter pub get
 flutter build web --no-wasm-dry-run
-~~~
+```
 
-Migrations create the 23 core Chapter 5 tables, indexed foreign keys, constraints and immutable-history triggers. Alembic also creates its version table. Seed is repeatable and does not overwrite existing passwords or published versions.
+---
 
-## Run the application
+## Running the Application
 
-In one root PowerShell terminal:
+### Option A: VS Code (F5 Launch)
+Open the workspace in VS Code and press **F5** or select one of the launch configurations:
+* **Full Stack (Backend + Flutter Chrome)**
+* **FastAPI Backend (Port 8000)**
+* **Flutter Web (Chrome - Hot Reload)**
+* **FastAPI Scheduler**
 
-~~~powershell
+### Option B: Terminal
+
+#### Terminal 1 — Backend API
+```powershell
+cd student_document_request_tracker
 $env:PYTHONPATH = 'backend'
-& backend/.venv/Scripts/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --no-access-log
-~~~
+& backend/.venv/Scripts/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+* **Web App**: [http://localhost:8000](http://localhost:8000)
+* **Swagger API Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-In a second root terminal, start exactly one dedicated scheduler:
+#### Terminal 2 — Flutter Web (Hot Reload Development)
+```powershell
+cd student_document_request_tracker
+flutter run -d chrome --web-port 5173 --dart-define=API_BASE=http://localhost:8000/api/v1
+```
 
-~~~powershell
+#### Terminal 3 — Background Automation Scheduler (Optional)
+```powershell
+cd student_document_request_tracker
 $env:PYTHONPATH = 'backend'
 & backend/.venv/Scripts/python.exe -m app.automation.scheduler
-~~~
+```
 
-Open http://localhost:8000 after building Flutter and starting/restarting FastAPI. FastAPI serves the real Flutter build and /api/v1 on the same origin. Swagger is at http://localhost:8000/docs. An unknown API path stays an API 404. Build changes require another Flutter build; restart FastAPI if it was started before build/web existed.
+---
 
-For Flutter development in a third terminal, with the API still running:
+## Default Development Accounts
 
-~~~powershell
-flutter run -d web-server --web-hostname localhost --web-port 5173 --dart-define=API_BASE=http://localhost:8000/api/v1
-~~~
+All seed accounts use the password specified by `SDRT_SEED_PASSWORD` in `.env`:
 
-Use localhost consistently so same-site development cookies work. The configured origin list permits localhost:5173 with credentials; it does not allow arbitrary origins. A protected browser cookie carries the session; no token is stored in browser local storage.
+| Role | Identifier / Email | Description |
+|---|---|---|
+| **Student** | `TEST-001` or `student@example.test` | Default student account (Juan Dela Cruz) |
+| **Student** | `TEST-002` or `other@example.test` | Secondary student account (Maria Santos) |
+| **Staff** | `registrar@example.test` | University registrar with service management permissions |
 
-## Controlled accounts and services
+---
 
-| Account | Role |
-| --- | --- |
-| student@example.test or TEST-001 | Synthetic student |
-| other@example.test or TEST-002 | Second student for ownership checks |
-| registrar@example.test | Synthetic registrar staff |
+## Testing & Quality Assurance
 
-Certificate of Good Moral version 1 has no payment. Certificate of Enrollment version 1 requires a fictional reference, separate fictional receipt and supporting evidence. Both versions include server-configured text/select/date/checkbox/file requirements. Payment is manual evidence review; no money is collected.
+Run the test suite from `student_document_request_tracker`:
 
-To enable service management for the controlled registrar account and create two **unpublished, provisional** example drafts, run once from the repository root:
-
-~~~powershell
-$env:PYTHONPATH = 'backend'
-& backend/.venv/Scripts/python.exe -m app.provision_week14_demo
-~~~
-
-The command only accepts a local development database, preserves existing services and passwords, and never publishes the examples. Sign out and back in after changing the registrar's permission. Open **Services** as the registrar to edit, save, preview and publish a draft. Example processing times and unpaid settings are placeholders, not confirmed ULS rules.
-
-The login page also offers development-only student registration. A student number entered there is not checked against a school roster. Self-registration is disabled outside the development/test environments until an institution-approved identity process is available.
-
-## Repeatable demonstration
-
-1. Sign in as the first student. Inspect the actual dashboard and two published services. Open a service's configured requirements, then Create request.
-2. Enter a synthetic purpose, select a category and confirm synthetic data. The date is optional in the seeded versions. For Enrollment, upload supporting PDF/JPEG/PNG and a separate fictional receipt; enter a fictional reference. Each file is at most 5 MiB; the server verifies content.
-3. Submit and confirm. Keep the server-confirmed SDRT tracking number. My Requests shows the real timeline and revision.
-4. In another browser profile/context, sign in as registrar. Open Requests and select that tracking number. Begin review. Attempting approval without verified payment returns PAYMENT_NOT_VERIFIED.
-5. Request correction for a named requirement and enter meaningful instructions. Refresh the student's detail, correct only the targeted element, and resubmit. View revision 1 to verify previous evidence is preserved.
-6. Registrar refreshes, verifies payment against revision 2, approves requirements, marks ready, and confirms actual handover. Student refreshes and acknowledges receipt. The final state is Completed.
-7. Wait up to one worker interval for real notifications. Read a notification and inspect staff Automation: summary, alerts, jobs, attempts and sanitized activity. Generate the current local-date summary; previous-date regeneration is rejected.
-8. Run the controlled failure experiment through pytest below. Its synthetic clock advances retry eligibility without changing production schedules. Inspect activity2/observed-jobs.json and logs/automation-tests.jsonl. Staff monitoring HTTP authorization and manual recovery are exercised against the test database, independently of the browser demonstration's development database.
-
-## Verification
-
-Run from repository root; pytest resets only the database explicitly named by SDRT_TEST_DATABASE_URL and ending in _test. Do not point it at records you need.
-
-~~~powershell
-flutter analyze
+```powershell
+# 1. Flutter widget & unit tests
 flutter test
-flutter build web --no-wasm-dry-run
+
+# 2. Backend pytest test suite
 $env:PYTHONPATH = 'backend'
-& backend/.venv/Scripts/python.exe -m pytest backend/tests -v -s --tb=short
+& backend/.venv/Scripts/python.exe -m pytest backend/tests
+
+# 3. Live end-to-end API smoke test (with backend running)
 & backend/.venv/Scripts/python.exe scripts/api_smoke.py
-& backend/.venv/Scripts/python.exe scripts/browser_demo.py
-~~~
-
-api_smoke.py and browser_demo.py require the actual API on port 8000. Browser automation uses installed Microsoft Edge through Playwright; on another workstation install Edge or adjust the channel to an installed Chromium. Its screenshots are actual UI captures. The test-only failure flags are internal worker inputs enabled only by SDRT_ENVIRONMENT=test; no browser failure-injection endpoint exists.
-
-See docs/api-contract.md, docs/architecture/week13.md, docs/implementation-decisions.md, and evidence/week13/sa7/recovery.md. The detailed Week 13 report records limitations and external academic blockers. No concept quiz, oral assessment, instructor approval, GitHub push, collaborator acceptance or production readiness is asserted.
-
-## Repository handover
-
-The implementation is local. Review git log and the Week 13 report for the verified local commit. Create a private remote only under the user's/instructor's directions, push the reviewed source, and invite Sir Nacorda using his verified GitHub username and course instructions. Do not include .env, .private, database files or tool binaries. No invitation acceptance is claimed.
-
-Week 14 development has begun; the earlier Week 13 report remains a historical record. Weeks 15–18 have not been assessed or deployed here.
+```

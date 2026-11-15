@@ -31,6 +31,7 @@ class _RequirementsFormState extends State<RequirementsForm> {
   final key = const Uuid().v4();
   Json? receipt;
   bool busy = false;
+  String? pendingTask;
   String? error;
   Json? retryPayload;
   Json get version => widget.service['version'];
@@ -101,6 +102,7 @@ class _RequirementsFormState extends State<RequirementsForm> {
       }
       setState(() {
         busy = true;
+        pendingTask = 'upload:$id';
         error = null;
       });
       final file = await widget.api.upload(pick.name, await pick.readAsBytes());
@@ -116,7 +118,12 @@ class _RequirementsFormState extends State<RequirementsForm> {
     } catch (e) {
       if (mounted) setState(() => error = e.toString());
     } finally {
-      if (mounted) setState(() => busy = false);
+      if (mounted) {
+        setState(() {
+          busy = false;
+          pendingTask = null;
+        });
+      }
     }
   }
 
@@ -215,6 +222,7 @@ class _RequirementsFormState extends State<RequirementsForm> {
     if (confirmed != true) return;
     setState(() {
       busy = true;
+      pendingTask = 'submit';
       error = null;
     });
     try {
@@ -228,7 +236,12 @@ class _RequirementsFormState extends State<RequirementsForm> {
       if (e is ApiError && e.status != 0 && e.status < 500) retryPayload = null;
       if (mounted) setState(() => error = e.toString());
     } finally {
-      if (mounted) setState(() => busy = false);
+      if (mounted) {
+        setState(() {
+          busy = false;
+          pendingTask = null;
+        });
+      }
     }
   }
 
@@ -244,14 +257,15 @@ class _RequirementsFormState extends State<RequirementsForm> {
         children: [
           Text(label),
           if (field['help_text'] != null) Text(field['help_text']),
-          OutlinedButton.icon(
+          const SizedBox(height: StudentSpace.tight),
+          StudentActionButton(
+            loading: pendingTask == 'upload:$id',
+            kind: StudentActionKind.secondary,
             onPressed: enabled && !widget.preview ? () => choose(id) : null,
-            icon: const Icon(Icons.upload_file),
-            label: Text(
-              files[id] == null
-                  ? 'Upload ${field['label']}'
-                  : 'Replace ${field['label']}: ${files[id]!['original_filename']}',
-            ),
+            icon: Icons.upload_file,
+            label: files[id] == null
+                ? 'Upload ${field['label']}'
+                : 'Replace ${field['label']}: ${files[id]!['original_filename']}',
           ),
         ],
       );
@@ -375,11 +389,13 @@ class _RequirementsFormState extends State<RequirementsForm> {
         const SizedBox(height: StudentSpace.page - 4),
         for (final field in fields) fieldWidget(field),
         if (version['payment']['required']) ...[
+          const Divider(height: StudentSpace.page),
           Text(
             'Payment evidence • ${version['payment']['currency']} ${version['payment']['amount']}',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           Text(version['payment']['instructions'] ?? ''),
+          const SizedBox(height: StudentSpace.medium),
           if (version['payment']['reference_required'])
             TextFormField(
               controller: reference,
@@ -423,18 +439,22 @@ class _RequirementsFormState extends State<RequirementsForm> {
           const Text(
             'Retry sends the same submission safely. Reopen the form to edit after checking My Requests.',
           ),
-        if (busy) const LinearProgressIndicator(),
+        if (busy && pendingTask != 'submit')
+          Semantics(
+            liveRegion: true,
+            child: const Text('Uploading evidence...'),
+          ),
+        const SizedBox(height: StudentSpace.medium),
         if (widget.preview)
           const Text('Preview only. Uploading and submission are disabled.')
         else
-          FilledButton.icon(
+          StudentActionButton(
+            loading: pendingTask == 'submit',
             onPressed: busy ? null : submit,
-            icon: const Icon(Icons.send),
-            label: Text(
-              retryPayload != null
-                  ? 'Retry identical submission'
-                  : 'Submit request',
-            ),
+            icon: Icons.send,
+            label: retryPayload != null
+                ? 'Retry identical submission'
+                : 'Submit request',
           ),
       ],
     ),

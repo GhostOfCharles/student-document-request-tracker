@@ -1,0 +1,67 @@
+[
+  {
+    "name": "staff_dashboard_desktop",
+    "category": "Staff Dashboard",
+    "viewport": "1440x950",
+    "files": [
+      "evidence/week15/screenshots/staff-dashboard-desktop.png"
+    ],
+    "captured_at": "2026-11-15T05:05:21.697729+00:00"
+  },
+  {
+    "name": "request_review_desktop",
+    "category": "Staff Review & Actions",
+    "viewport": "1440x950",
+    "files": [
+      "evidence/week15/screenshots/request-review-desktop.png",
+      "evidence/week13/screenshots/staff-request-detail-desktop.png"
+    ],
+    "captured_at": "2026-11-15T05:05:25.346882+00:00"
+  },
+  {
+    "name": "service_management_desktop",
+    "category": "Services & Versioning",
+    "viewport": "1440x950",
+    "files": [
+      "evidence/week15/screenshots/service-management-desktop.png"
+    ],
+    "captured_at": "2026-11-15T05:05:26.939516+00:00"
+  },
+  {
+    "name": "request_review_mobile",
+    "category": "Staff Review & Actions (Mobile)",
+    "viewport": "390x844",
+    "files": [
+      "evidence/week15/screenshots/request-review-mobile.png",
+      "evidence/week13/screenshots/staff-request-detail-narrow.png"
+    ],
+    "captured_at": "2026-11-15T05:05:33.102099+00:00"
+  },
+  {
+    "name": "student_dashboard_desktop",
+    "category": "Student Portal",
+    "viewport": "1440x950",
+    "files": [
+      "evidence/week15/screenshots/student-dashboard-desktop.png"
+    ],
+    "captured_at": "2026-11-15T05:05:36.069380+00:00"
+  },
+  {
+    "name": "student_request_detail_desktop",
+    "category": "Student Request Status",
+    "viewport": "1440x950",
+    "files": [
+      "evidence/week15/screenshots/student-request-detail-desktop.png"
+    ],
+    "captured_at": "2026-11-15T05:05:39.664350+00:00"
+  },
+  {
+    "name": "student_request_detail_mobile",
+    "category": "Student Request Status (Mobile)",
+    "viewport": "390x844",
+    "files": [
+      "evidence/week15/screenshots/student-request-detail-mobile.png"
+    ],
+    "captured_at": "2026-11-15T05:05:45.736193+00:00"
+  }
+]

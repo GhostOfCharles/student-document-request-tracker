@@ -1,0 +1,147 @@
+{
+  "timestamp_utc": "2026-11-15T05:07:46.607006+00:00",
+  "base_url": "http://localhost:8000",
+  "checks": [
+    {
+      "check": "staff_dashboard_desktop",
+      "result": "PASS",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "screenshot": "evidence/week13/screenshots/staff-visual/staff-dashboard-desktop.png"
+    },
+    {
+      "check": "staff_services_desktop",
+      "result": "PASS",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "screenshot": "evidence/week13/screenshots/staff-visual/staff-services-desktop.png"
+    },
+    {
+      "check": "staff_request_queue_desktop",
+      "result": "PASS",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "screenshot": "evidence/week13/screenshots/staff-visual/staff-request-queue-desktop.png"
+    },
+    {
+      "check": "staff_request_detail_desktop",
+      "result": "PASS",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "screenshot": "evidence/week13/screenshots/staff-visual/staff-request-detail-desktop.png"
+    },
+    {
+      "check": "staff_notifications_desktop",
+      "result": "PASS",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "screenshot": "evidence/week13/screenshots/staff-visual/staff-notifications-desktop.png"
+    },
+    {
+      "check": "staff_automation_desktop",
+      "result": "PASS",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "screenshot": "evidence/week13/screenshots/staff-visual/staff-automation-desktop.png"
+    },
+    {
+      "check": "signout_dialog_desktop",
+      "result": "PASS",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "screenshot": "evidence/week13/screenshots/staff-visual/staff-dialog-signout-desktop.png"
+    },
+    {
+      "check": "staff_dashboard_narrow",
+      "result": "PASS",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "screenshot": "evidence/week13/screenshots/staff-visual/staff-dashboard-narrow.png"
+    },
+    {
+      "check": "staff_services_narrow",
+      "result": "PASS",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "screenshot": "evidence/week13/screenshots/staff-visual/staff-services-narrow.png"
+    },
+    {
+      "check": "staff_request_queue_narrow",
+      "result": "PASS",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "screenshot": "evidence/week13/screenshots/staff-visual/staff-request-queue-narrow.png"
+    },
+    {
+      "check": "staff_request_detail_narrow",
+      "result": "PASS",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "screenshot": "evidence/week13/screenshots/staff-visual/staff-request-detail-narrow.png"
+    },
+    {
+      "check": "staff_notifications_narrow",
+      "result": "PASS",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "screenshot": "evidence/week13/screenshots/staff-visual/staff-notifications-narrow.png"
+    },
+    {
+      "check": "staff_automation_narrow",
+      "result": "PASS",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "screenshot": "evidence/week13/screenshots/staff-visual/staff-automation-narrow.png"
+    },
+    {
+      "check": "job_dialog_narrow",
+      "result": "PASS",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "screenshot": "evidence/week13/screenshots/staff-visual/staff-dialog-job-narrow.png"
+    },
+    {
+      "check": "signout_dialog_narrow",
+      "result": "PASS",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "screenshot": "evidence/week13/screenshots/staff-visual/staff-dialog-signout-narrow.png"
+    },
+    {
+      "check": "browser_page_errors",
+      "result": "PASS",
+      "count": 0
+    }
+  ],
+  "page_errors": []
+}

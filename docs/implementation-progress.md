@@ -1,25 +1,47 @@
-# Week 13 implementation progress
+# Project Implementation Progress
 
-Final feasible implementation and verification status, 30 October 2026 Asia/Manila. PASS means actual execution or inspected authored evidence, not instructor grading. Overall academic acceptance remains BLOCKED by the missing course module and unverified external approval.
+**Last Updated**: 15 November 2026  
+**Current Milestone**: Week 15 Complete (Ready for Week 16 Deployment Preparation)  
 
-| Week 13 task | Status | Evidence |
-| --- | --- | --- |
-| Inspect repository; preserve template and root AGENTS.md | PASS | Git history; root Flutter layout retained |
-| Read project DOCX content and tables | PASS | docs/specification/Student_Document_Request_Tracker_Documentation.docx and project-extracted.txt |
-| Read instructor Module 13 and independently audit its exact rubric | BLOCKED | Named course DOCX absent in repository and searched Downloads/Documents/Desktop/Projects; local path requested, not supplied |
-| Flutter Web / FastAPI / real MySQL connection | PASS | logs/flutter-build-final.log; verification/api-smoke.json; verification/browser-events.json |
-| Alembic and schema constraints | PASS | verification/mysql-schema.json; logs/pytest.log — MySQL 8.4.13, 23 core tables plus Alembic, 22 immutability triggers |
-| Seed accounts, sessions, roles and two published versions | PASS | backend/app/seed.py; API/pytest/browser execution |
-| Dynamic requirements, private files, initial submission and canonical retries | PASS | 13 backend tests; 4 Flutter tests; browser upload/confirmation evidence |
-| Staff review, payment, immutable corrections and release/acknowledgement | PASS | Completed browser request SDRT-2026-000006; revision 2; logs/browser-final.log |
-| Durable status notifications and designated scheduler | PASS | logs/scheduler.log; logs/scheduler-second-instance.log; notifications browser capture |
-| Aging/escalation, correction suspension, cleanup and local summary | PASS | logs/pytest.log; logs/automation-tests.jsonl; actual scheduler startup and browser summary |
-| Transient retry, interruption fencing, terminal failure and safe recovery | PASS | activity2/observed-jobs.json; activity2/interpretation.md; browser-failure-monitor.json |
-| Responsive UI and principal shared states | PASS | screenshots at 1440×1000 and 390×844; adverse payment and offline-recovery captures; no page errors |
-| Activity 1 comparison and decision ownership | PASS | activity1/decisions.md — authored against supplied AGENTS.md/project requirements; exact module match remains BLOCKED |
-| Activity 2 controlled execution and interpretation | PASS | activity2/interpretation.md; real jobs, attempts, logs and authorized API/UI manual handling |
-| SA7 source, setup, API contract, architecture, recovery and maintainability | PASS | README.md; docs/api-contract.md; docs/architecture/week13.md; sa7/recovery.md and maintainability.md |
-| Instructor/title/FastAPI approval, GitHub invitation/access, quizzes/oral work | BLOCKED | External and unverified; not represented as completed |
-| Final Week 13-only implementation report | PASS | evidence/week13/sa7/week13-report.md |
+---
 
-No later milestone has been implemented or assessed. The scheduler and temporary test API were stopped after evidence capture; the main API and isolated MySQL remained running at handover. Restart the worker using the README command to resume ongoing automation.
+## 1. Milestone Status Overview
+
+| Milestone | Implementation Focus | Required Exit Evidence | Status |
+|---|---|---|---|
+| **Week 13** | Core workflow vertical slice, real MySQL constraints, dynamic requirement renderer, durable automation, retry failure recovery | Verified schema (23 tables, 22 triggers), passing pytest/Flutter suites, scheduler interruption recovery logs, browser screenshots | **COMPLETE** |
+| **Week 14** | Student registration, service draft editor, publishing controls, availability toggles, profiles, temporary staff password forced resets | Wireframes mapped to implemented routes, version immutability verification, manager permissions test suite (`week14_tests`), isolated browser captures | **COMPLETE** |
+| **Week 15** | Integration and usability testing; verify invalid transitions, uploads, retry races, responsive layouts, error handling; defect resolution | Test matrix (`evidence/week15/test-matrix.md`), defect register (`evidence/week15/defect-register.md`), passing suites, 7 visual demonstrations, updated docs | **COMPLETE** |
+| **Week 16** | Evaluate VPS hosting against persistent Python, MySQL, private storage, HTTPS and scheduler requirements; test environment deployment | Deployment configuration, smoke tests, scheduler restart evidence, protected download tests, restore evidence | *Upcoming* |
+| **Week 17** | User acceptance with controlled evidence, help content refinement, complete demonstration and recovery rehearsal | Acceptance results, issue dispositions, final interface captures, reproducible demo procedure | *Scheduled* |
+| **Week 18** | Freeze assessed release, finalize documentation, archive evidence, handover and presentation | Tagged GitHub release, migration inventory, final documentation, demonstration recording | *Scheduled* |
+
+---
+
+## 2. Week 15 Verification Checklist
+
+| Criterion | Target | Verification Result | Evidence Reference |
+|---|---|---|---|
+| **Static Code Quality** | 0 errors, 0 warnings | **PASS** | `flutter analyze` completed with 0 issues |
+| **Frontend Unit & Widget Tests** | All passing | **PASS** (17/17) | `flutter test` executed 17 test cases with 100% pass rate |
+| **Backend Core Suite** | All passing | **PASS** (13/13) | `pytest backend/tests` (13 tests passed against MySQL) |
+| **Backend Week 14/15 Suite** | All passing | **PASS** (6/6) | `pytest backend/week14_tests` (6 tests passed against MySQL test schema) |
+| **Live API Smoke** | Zero regressions | **PASS** (9/9) | `scripts/api_smoke.py` -> `evidence/week15/verification/api-smoke.json` |
+| **Browser Authentication Smoke** | Zero regressions | **PASS** (6/6) | `scripts/login_smoke.py` -> `evidence/week15/verification/student-ui-smoke.json` |
+| **Staff Console Navigation** | Zero console errors | **PASS** (15/15) | `scripts/staff_design_smoke.py` -> `evidence/week15/verification/staff-visual-smoke.json` |
+| **Request Review UX Redesign** | Modern 2-column layout, document cards, action priority | **VERIFIED** | `evidence/week15/screenshots/request-review-desktop.png` & `mobile.png` |
+| **Multi-Viewport Ergonomics** | Desktop ($\ge 900\,\text{px}$) & Mobile ($390\,\text{px}$) | **VERIFIED** | 7 screenshots in `evidence/week15/screenshots/` and visual manifest |
+| **Defect Tracking** | All discovered defects documented and resolved | **CLOSED** (8/8) | `evidence/week15/defect-register.md` |
+| **Test Matrix** | Comprehensive coverage of state machine, RBAC, uploads, races | **DOCUMENTED** | `evidence/week15/test-matrix.md` |
+
+---
+
+## 3. Operational State at Handover
+
+* **Local Backend Service**: FastAPI running on `http://localhost:8000`.
+* **Database Service**: MySQL 8.4.3 (Laragon) running on port 3306 with databases `sdrt` (production seed) and `sdrt_test` (disposable test schema).
+* **Triggers & Immutability**: All 22 database triggers active and enforcing published version immutability.
+* **Test Accounts**:
+  * Student: `student@example.test` / `TEST-001`
+  * Registrar Staff: `registrar@example.test` / `STAFF-TEST-001`
+  * Service Manager: `registrar@example.test` (with `can_manage_services=True`)

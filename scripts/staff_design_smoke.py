@@ -1,4 +1,4 @@
-﻿"""Responsive staff UI smoke test against the live local Flutter Web/FastAPI app."""
+"""Responsive staff UI smoke test against the live local Flutter Web/FastAPI app."""
 import json
 import re
 from datetime import datetime, timezone
@@ -27,7 +27,7 @@ def shot(page, name, check):
 
 
 def navigate(page, name):
-    path = {'Dashboard': '/dashboard', 'Services': '/services', 'Requests': '/requests', 'Notifications': '/notifications', 'Automation': '/staff/automation/jobs'}[name]
+    path = {'Dashboard': '/dashboard', 'Services': '/staff/services', 'Requests': '/requests', 'Notifications': '/notifications', 'Automation': '/staff/automation/jobs'}[name]
     narrow = page.viewport_size['width'] < 900
     if narrow:
         menu = page.get_by_role('button', name='Open navigation menu')
@@ -72,7 +72,7 @@ def screen_set(page, suffix):
             expect(page.get_by_role('textbox', name='Note')).to_be_visible()
             shot(page, f'staff-dialog-note-{suffix}.png', f'note_dialog_{suffix}')
             page.keyboard.press('Escape')
-        revision = page.get_by_role('button', name='View revision 1', exact=True)
+        revision = page.get_by_role('button', name=re.compile(r'(View )?[Rr]evision 1'))
         if revision.count():
             revision.click()
             expect(page.get_by_role('button', name='Close', exact=True)).to_be_visible()

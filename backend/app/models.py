@@ -1,4 +1,4 @@
-"""Week 13 schema transcribed from Chapter 5 tables; MySQL only."""
+"""Database schema models for Student Document Request Tracker."""
 
 from sqlalchemy import (
     Table,

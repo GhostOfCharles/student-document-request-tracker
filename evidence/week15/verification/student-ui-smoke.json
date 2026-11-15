@@ -1,0 +1,44 @@
+{
+  "timestamp_utc": "2026-11-15T05:07:32.199507+00:00",
+  "base_url": "http://localhost:8000",
+  "checks": [
+    {
+      "check": "incorrect_password_message",
+      "result": "PASS"
+    },
+    {
+      "check": "browser_login",
+      "account": "TEST-001",
+      "result": "PASS",
+      "screenshot": "screenshots/student-dashboard-desktop.png"
+    },
+    {
+      "check": "services_and_dynamic_form",
+      "result": "PASS",
+      "screenshots": [
+        "screenshots/student-services-desktop.png",
+        "screenshots/student-request-form-desktop.png"
+      ]
+    },
+    {
+      "check": "notifications_and_request_list",
+      "result": "PASS",
+      "screenshots": [
+        "screenshots/student-notifications-desktop.png",
+        "screenshots/student-requests-desktop.png"
+      ]
+    },
+    {
+      "check": "narrow_drawer_navigation",
+      "viewport": "390x844",
+      "result": "PASS",
+      "screenshot": "screenshots/student-dashboard-narrow.png"
+    },
+    {
+      "check": "browser_login",
+      "account": "registrar@example.test",
+      "result": "PASS",
+      "screenshot": "screenshots/staff-dashboard-existing.png"
+    }
+  ]
+}

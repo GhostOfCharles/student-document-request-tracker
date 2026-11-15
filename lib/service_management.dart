@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'api.dart';
 import 'design_system.dart';
 import 'requirements_form.dart';
+import 'service_focus_carousel.dart';
 
 class ServiceManagement extends StatefulWidget {
   final Api api;
@@ -244,66 +245,83 @@ class _ServiceManagementState extends State<ServiceManagement> {
                 message: 'Try another search or availability filter.',
               )
             else
-              for (final item in (filtered ?? widget.listing)['items'])
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(StudentSpace.medium),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item['current_version']?['name'] ??
-                              (item['draft_name']?.isNotEmpty == true
-                                  ? item['draft_name']
-                                  : item['service_code']),
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        if (item['current_version'] != null) ...[
-                          Text(item['current_version']['description'] ?? ''),
-                          Text(versionSummary(item['current_version'])),
-                        ],
-                        Text(
-                          item['service_code'] +
-                              (item['is_active']
-                                  ? ' • Available'
-                                  : ' • Unavailable') +
-                              (item['has_draft'] ? ' • Draft in progress' : ''),
-                        ),
-                        const SizedBox(height: StudentSpace.tight),
-                        Wrap(
-                          spacing: StudentSpace.tight,
-                          runSpacing: StudentSpace.tight,
-                          children: [
-                            OutlinedButton(
-                              onPressed: busy ? null : () => history(item),
-                              child: const Text('View versions'),
-                            ),
-                            if (manager)
-                              OutlinedButton(
-                                onPressed: busy ? null : () => editor(item),
-                                child: Text(
-                                  item['has_draft']
-                                      ? 'Edit draft'
-                                      : 'Create draft',
-                                ),
-                              ),
-                            if (manager && item['current_version_id'] != null)
-                              OutlinedButton(
-                                onPressed: busy
-                                    ? null
-                                    : () => availability(item),
-                                child: Text(
-                                  item['is_active']
-                                      ? 'Make unavailable'
-                                      : 'Make available',
-                                ),
-                              ),
+              ServiceFocusCarousel(
+                enabled: !busy,
+                serviceIds: [
+                  for (final item in (filtered ?? widget.listing)['items'])
+                    item['id'] as int,
+                ],
+                labelBuilder: (index) {
+                  final item = (filtered ?? widget.listing)['items'][index];
+                  return item['current_version']?['name'] ??
+                      item['draft_name'] ??
+                      item['service_code'];
+                },
+                itemBuilder: (context, index) {
+                  final item = (filtered ?? widget.listing)['items'][index];
+                  return Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(StudentSpace.medium),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item['current_version']?['name'] ??
+                                (item['draft_name']?.isNotEmpty == true
+                                    ? item['draft_name']
+                                    : item['service_code']),
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          if (item['current_version'] != null) ...[
+                            Text(item['current_version']['description'] ?? ''),
+                            Text(versionSummary(item['current_version'])),
                           ],
-                        ),
-                      ],
+                          Text(
+                            item['service_code'] +
+                                (item['is_active']
+                                    ? ' • Available'
+                                    : ' • Unavailable') +
+                                (item['has_draft']
+                                    ? ' • Draft in progress'
+                                    : ''),
+                          ),
+                          const SizedBox(height: StudentSpace.tight),
+                          Wrap(
+                            spacing: StudentSpace.tight,
+                            runSpacing: StudentSpace.tight,
+                            children: [
+                              OutlinedButton(
+                                onPressed: busy ? null : () => history(item),
+                                child: const Text('View versions'),
+                              ),
+                              if (manager)
+                                OutlinedButton(
+                                  onPressed: busy ? null : () => editor(item),
+                                  child: Text(
+                                    item['has_draft']
+                                        ? 'Edit draft'
+                                        : 'Create draft',
+                                  ),
+                                ),
+                              if (manager && item['current_version_id'] != null)
+                                OutlinedButton(
+                                  onPressed: busy
+                                      ? null
+                                      : () => availability(item),
+                                  child: Text(
+                                    item['is_active']
+                                        ? 'Make unavailable'
+                                        : 'Make available',
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
+              ),
           ],
         ),
       ),
@@ -454,7 +472,12 @@ class _ServiceDraftEditorState extends State<ServiceDraftEditor> {
         builder: (ctx) => Scaffold(
           appBar: AppBar(title: const Text('Student form preview')),
           body: SingleChildScrollView(
-            padding: const EdgeInsets.all(StudentSpace.page),
+            padding: EdgeInsets.all(
+              MediaQuery.sizeOf(context).width <
+                      StudentSize.cardHeaderBreakpoint
+                  ? StudentSpace.medium
+                  : StudentSpace.page,
+            ),
             child: StudentSectionCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -592,11 +615,13 @@ class _ServiceDraftEditorState extends State<ServiceDraftEditor> {
               ),
             ],
           ),
+          const SizedBox(height: StudentSpace.tight),
           TextFormField(
             initialValue: field['field_key'],
             decoration: const InputDecoration(
               labelText: 'Field key (optional)',
               helperText: 'Generated from the label if left blank.',
+              helperMaxLines: 2,
             ),
             onChanged: (v) => field['field_key'] = v.trim(),
             validator: (v) =>
@@ -717,9 +742,12 @@ class _ServiceDraftEditorState extends State<ServiceDraftEditor> {
               },
             ),
           if (field['field_type'] == 'file') ...[
-            const Text('Allowed file types (maximum 5 MiB each)'),
+            const SizedBox(height: StudentSpace.tight),
+            const Text('Allowed file types'),
+            const SizedBox(height: StudentSpace.tight),
             Wrap(
               spacing: StudentSpace.tight,
+              runSpacing: StudentSpace.tight,
               children: [
                 for (final entry in const [
                   ('PDF', 'application/pdf'),
@@ -743,12 +771,15 @@ class _ServiceDraftEditorState extends State<ServiceDraftEditor> {
                   ),
               ],
             ),
+            const SizedBox(height: StudentSpace.medium),
             TextFormField(
               key: ValueKey('file-size-${identityHashCode(field)}'),
               initialValue: field['max_file_size_bytes'].toString(),
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                labelText: 'Maximum file size in bytes (up to 5242880)',
+                labelText: 'Maximum file size (bytes)',
+                helperText: 'Up to 5 MiB per file (5,242,880 bytes).',
+                helperMaxLines: 2,
               ),
               onChanged: (v) => field['max_file_size_bytes'] = int.tryParse(v),
               validator: (v) {
@@ -807,7 +838,12 @@ class _ServiceDraftEditorState extends State<ServiceDraftEditor> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 900),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(StudentSpace.page),
+            padding: EdgeInsets.all(
+              MediaQuery.sizeOf(context).width <
+                      StudentSize.cardHeaderBreakpoint
+                  ? StudentSpace.medium
+                  : StudentSpace.page,
+            ),
             child: StudentSectionCard(
               child: Form(
                 key: formKey,
@@ -957,8 +993,14 @@ class _ServiceDraftEditorState extends State<ServiceDraftEditor> {
                       'Requirements',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
+                    const SizedBox(height: StudentSpace.medium),
                     for (var i = 0; i < fields.length; i++)
-                      requirement(fields[i], i),
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: StudentSpace.medium,
+                        ),
+                        child: requirement(fields[i], i),
+                      ),
                     OutlinedButton.icon(
                       onPressed: fields.length >= 20
                           ? null
@@ -969,6 +1011,9 @@ class _ServiceDraftEditorState extends State<ServiceDraftEditor> {
                       icon: const Icon(Icons.add),
                       label: const Text('Add requirement'),
                     ),
+                    const SizedBox(height: StudentSpace.sectionGap),
+                    const Divider(),
+                    const SizedBox(height: StudentSpace.medium),
                     if (error != null)
                       Text(
                         error!,
@@ -987,9 +1032,13 @@ class _ServiceDraftEditorState extends State<ServiceDraftEditor> {
                       spacing: StudentSpace.tight,
                       runSpacing: StudentSpace.tight,
                       children: [
-                        FilledButton(
-                          onPressed: busy ? null : save,
-                          child: const Text('Save draft'),
+                        StudentActionButton(
+                          loading: busy,
+                          onPressed: save,
+                          label: 'Save draft',
+                          kind: dirty || draft == null
+                              ? StudentActionKind.primary
+                              : StudentActionKind.secondary,
                         ),
                         if (draft != null)
                           OutlinedButton(
