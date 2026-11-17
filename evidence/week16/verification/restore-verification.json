@@ -1,0 +1,14 @@
+{
+  "executed_at": "2026-11-17T07:02:43.516261+00:00",
+  "backup_duration_seconds": 0.667,
+  "restore_duration_seconds": 3.51,
+  "alembic_revision": "0002_published_children",
+  "tables_restored": 24,
+  "triggers_restored": 22,
+  "requests_restored": [
+    "SDRT-2026-000001",
+    "SDRT-2026-000002"
+  ],
+  "file_hashes_verified": 3,
+  "result": "PASS"
+}

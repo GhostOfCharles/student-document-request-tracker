@@ -1,0 +1,41 @@
+{
+  "executed_at": "2026-11-17T07:02:05.545635+00:00",
+  "file_id": 3,
+  "sha256": "06a41049bf125148fffa7ca40966ba09a3f41410804130848a5ea6510b47bfd6",
+  "result": "PASS",
+  "cases": [
+    {
+      "case": "unauthenticated_download",
+      "endpoint": "/api/v1/files/3",
+      "http_status": 401,
+      "code": "AUTHENTICATION_REQUIRED",
+      "result": "PASS"
+    },
+    {
+      "case": "cross_student_isolation",
+      "actor": "TEST-002",
+      "endpoint": "/api/v1/files/3",
+      "http_status": 404,
+      "code": "RESOURCE_NOT_FOUND",
+      "result": "PASS"
+    },
+    {
+      "case": "owner_authorized_download",
+      "actor": "TEST-001",
+      "endpoint": "/api/v1/files/3?disposition=inline",
+      "http_status": 200,
+      "cache_control": "private, no-store",
+      "csp": "sandbox; default-src 'none'",
+      "sha256_verified": true,
+      "result": "PASS"
+    },
+    {
+      "case": "staff_authorized_download",
+      "actor": "registrar@example.test",
+      "endpoint": "/api/v1/files/3",
+      "http_status": 200,
+      "sha256_verified": true,
+      "result": "PASS"
+    }
+  ]
+}

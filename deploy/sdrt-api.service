@@ -1,0 +1,32 @@
+[Unit]
+Description=Student Document Request Tracker FastAPI Application
+Documentation=https://github.com/student-document-request-tracker
+After=network-online.target mysql.service
+Wants=network-online.target mysql.service
+
+[Service]
+Type=simple
+User=sdrt
+Group=sdrt
+WorkingDirectory=/opt/sdrt/app/backend
+Environment="PYTHONPATH=/opt/sdrt/app/backend"
+EnvironmentFile=/etc/sdrt/sdrt.env
+ExecStart=/opt/sdrt/app/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2 --proxy-headers --forwarded-allow-ips=127.0.0.1
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+
+# Hardening & private storage isolation
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/sdrt/private_uploads
+UMask=0077
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sdrt-api
+
+[Install]
+WantedBy=multi-user.target

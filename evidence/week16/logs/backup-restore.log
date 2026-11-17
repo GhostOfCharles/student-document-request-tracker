@@ -1,0 +1,9 @@
+=== Week 16 Paired Backup & Restore Rehearsal (2026-11-17T07:02:25.246153+00:00) ===
+[pre-backup] requests=['SDRT-2026-000001', 'SDRT-2026-000002'] stored_files=3 triggers=22
+$ mysqldump --single-transaction --routines --triggers --hex-blob sdrt_staging > db_sdrt_staging.sql
+[backup-complete] duration_s=0.667 dump_bytes=86187 dump_sha256=cd1b17fa7ef15303... uploads_zip_bytes=985 uploads_zip_sha256=48083345446e6346...
+[disaster-simulation] Dropping all tables in sdrt_staging and wiping .private/staging_uploads...
+[disaster-verified] tables_remaining=0 private_files_remaining=0
+$ mysql sdrt_staging < db_sdrt_staging.sql && unzip private_uploads.zip -> .private/staging_uploads
+[restore-verified] duration_s=3.51 alembic_rev=0002_published_children tables=24 triggers=22 requests=['SDRT-2026-000001', 'SDRT-2026-000002'] file_hashes_verified=3/3
+[post-restore-smoke] GET /api/v1/requests total=2; GET /api/v1/files/3 status=200

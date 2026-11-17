@@ -1,0 +1,177 @@
+{
+  "environment": "staging (Nginx 1.30.4 on :8080 -> FastAPI :8081 -> MySQL 8.4.3 sdrt_staging)",
+  "executed_at": "2026-11-17T07:01:45.716038+00:00",
+  "result": "PASS",
+  "total_checks": 20,
+  "checks": [
+    {
+      "timestamp": "2026-11-17T07:01:36.845070+00:00",
+      "check": "nginx_serves_flutter_root",
+      "method": "GET",
+      "path": "/",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "timestamp": "2026-11-17T07:01:36.851669+00:00",
+      "check": "nginx_spa_fallback_route",
+      "method": "GET",
+      "path": "/services",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "timestamp": "2026-11-17T07:01:36.853598+00:00",
+      "check": "nginx_blocks_hidden_dotfile",
+      "method": "GET",
+      "path": "/.env",
+      "http_status": 404,
+      "result": "PASS"
+    },
+    {
+      "timestamp": "2026-11-17T07:01:37.065647+00:00",
+      "check": "unknown_api_stays_json_404",
+      "method": "GET",
+      "path": "/api/v1/nonexistent",
+      "http_status": 404,
+      "result": "PASS"
+    },
+    {
+      "timestamp": "2026-11-17T07:01:42.032645+00:00",
+      "check": "student_dashboard",
+      "method": "GET",
+      "path": "/api/v1/dashboard",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "timestamp": "2026-11-17T07:01:42.098176+00:00",
+      "check": "published_services_list",
+      "method": "GET",
+      "path": "/api/v1/services",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "timestamp": "2026-11-17T07:01:42.117656+00:00",
+      "check": "student_denied_staff_automation",
+      "method": "GET",
+      "path": "/api/v1/staff/automation/jobs",
+      "http_status": 403,
+      "result": "PASS"
+    },
+    {
+      "timestamp": "2026-11-17T07:01:44.156364+00:00",
+      "check": "student_submit_paid_request",
+      "method": "POST",
+      "path": "/api/v1/requests",
+      "http_status": 201,
+      "result": "PASS"
+    },
+    {
+      "timestamp": "2026-11-17T07:01:44.285596+00:00",
+      "check": "staff_begin_review",
+      "method": "POST",
+      "path": "/api/v1/staff/requests/1/begin-review",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "timestamp": "2026-11-17T07:01:44.336880+00:00",
+      "check": "staff_verify_payment",
+      "method": "POST",
+      "path": "/api/v1/staff/requests/1/payment-reviews",
+      "http_status": 201,
+      "result": "PASS"
+    },
+    {
+      "timestamp": "2026-11-17T07:01:44.381690+00:00",
+      "check": "staff_approve_request",
+      "method": "POST",
+      "path": "/api/v1/staff/requests/1/approve",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "timestamp": "2026-11-17T07:01:44.428307+00:00",
+      "check": "staff_ready_for_release",
+      "method": "POST",
+      "path": "/api/v1/staff/requests/1/ready-for-release",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "timestamp": "2026-11-17T07:01:44.465013+00:00",
+      "check": "staff_release_request",
+      "method": "POST",
+      "path": "/api/v1/staff/requests/1/release",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "timestamp": "2026-11-17T07:01:44.525365+00:00",
+      "check": "student_acknowledge_completion",
+      "method": "POST",
+      "path": "/api/v1/requests/1/acknowledge",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "timestamp": "2026-11-17T07:01:45.438766+00:00",
+      "check": "student_stage_file_for_req2",
+      "method": "POST",
+      "path": "/api/v1/files/staging",
+      "http_status": 201,
+      "result": "PASS"
+    },
+    {
+      "timestamp": "2026-11-17T07:01:45.560210+00:00",
+      "check": "student_submit_second_request",
+      "method": "POST",
+      "path": "/api/v1/requests",
+      "http_status": 201,
+      "result": "PASS"
+    },
+    {
+      "timestamp": "2026-11-17T07:01:45.610056+00:00",
+      "check": "student_notifications_list",
+      "method": "GET",
+      "path": "/api/v1/notifications",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "timestamp": "2026-11-17T07:01:45.635111+00:00",
+      "check": "staff_automation_runs_list",
+      "method": "GET",
+      "path": "/api/v1/staff/automation/runs",
+      "http_status": 200,
+      "result": "PASS"
+    },
+    {
+      "timestamp": "2026-11-17T07:01:45.678030+00:00",
+      "check": "student_logout",
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "http_status": 204,
+      "result": "PASS"
+    },
+    {
+      "timestamp": "2026-11-17T07:01:45.715700+00:00",
+      "check": "revoked_session_denied",
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "http_status": 401,
+      "result": "PASS"
+    }
+  ],
+  "seeded_requests": [
+    "SDRT-2026-000001",
+    "SDRT-2026-000002"
+  ],
+  "protected_file": {
+    "file_id": 3,
+    "sha256": "06a41049bf125148fffa7ca40966ba09a3f41410804130848a5ea6510b47bfd6",
+    "request_number": "SDRT-2026-000002"
+  }
+}

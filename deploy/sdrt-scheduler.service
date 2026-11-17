@@ -1,0 +1,34 @@
+[Unit]
+Description=Student Document Request Tracker Designated APScheduler Worker
+Documentation=https://github.com/student-document-request-tracker
+After=network-online.target mysql.service sdrt-api.service
+Wants=network-online.target mysql.service
+
+[Service]
+Type=simple
+User=sdrt
+Group=sdrt
+WorkingDirectory=/opt/sdrt/app/backend
+Environment="PYTHONPATH=/opt/sdrt/app/backend"
+EnvironmentFile=/etc/sdrt/sdrt.env
+# Single designated scheduler process; acquires MySQL GET_LOCK('sdrt_designated_scheduler', 0)
+# and recovers expired leases / interrupted runs on startup.
+ExecStart=/opt/sdrt/app/backend/.venv/bin/python -m app.automation.scheduler
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+
+# Hardening & private storage isolation
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/sdrt/private_uploads
+UMask=0077
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sdrt-scheduler
+
+[Install]
+WantedBy=multi-user.target

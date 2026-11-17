@@ -1,0 +1,42 @@
+=== Week 16 Scheduler Restart & Lease Recovery Test (2026-11-17T07:02:05.547259+00:00) ===
+[scheduler-1 pid=3328] {"attempt": 1, "event": "claimed", "job_id": 1, "timestamp": "2026-11-17T07:02:08.050056Z"}
+[scheduler-1 pid=3328] {"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 1, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-11-17T07:02:08.098100Z"}
+[scheduler-1 pid=3328] {"attempt": 1, "event": "claimed", "job_id": 2, "timestamp": "2026-11-17T07:02:08.113464Z"}
+[scheduler-1 pid=3328] {"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 2, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-11-17T07:02:08.135844Z"}
+[scheduler-1 pid=3328] {"attempt": 1, "event": "claimed", "job_id": 3, "timestamp": "2026-11-17T07:02:08.147155Z"}
+[scheduler-1 pid=3328] {"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 3, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-11-17T07:02:08.164422Z"}
+[scheduler-1 pid=3328] {"attempt": 1, "event": "claimed", "job_id": 4, "timestamp": "2026-11-17T07:02:08.177119Z"}
+[scheduler-1 pid=3328] {"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 4, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-11-17T07:02:08.200619Z"}
+[scheduler-1 pid=3328] {"attempt": 1, "event": "claimed", "job_id": 5, "timestamp": "2026-11-17T07:02:08.215085Z"}
+[scheduler-1 pid=3328] {"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 5, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-11-17T07:02:08.240083Z"}
+[scheduler-1 pid=3328] {"attempt": 1, "event": "claimed", "job_id": 6, "timestamp": "2026-11-17T07:02:08.255294Z"}
+[scheduler-1 pid=3328] {"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 6, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-11-17T07:02:08.278236Z"}
+[scheduler-1 pid=3328] {"attempt": 1, "event": "claimed", "job_id": 7, "timestamp": "2026-11-17T07:02:08.292724Z"}
+[scheduler-1 pid=3328] {"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 7, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-11-17T07:02:08.315953Z"}
+[scheduler-1 pid=3328] {"attempt": 1, "event": "claimed", "job_id": 8, "timestamp": "2026-11-17T07:02:08.331366Z"}
+[scheduler-1 pid=3328] {"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 8, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-11-17T07:02:08.358308Z"}
+[scheduler-1 pid=3328] {"attempt": 1, "event": "claimed", "job_id": 9, "timestamp": "2026-11-17T07:02:08.373853Z"}
+[scheduler-1 pid=3328] {"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 9, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-11-17T07:02:08.397245Z"}
+[scheduler-1 pid=3328] {"attempt": 1, "event": "claimed", "job_id": 10, "timestamp": "2026-11-17T07:02:08.413574Z"}
+[scheduler-1 pid=3328] {"attempt": 1, "error_code": null, "event": "attempt_finished", "job_id": 10, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-11-17T07:02:08.437926Z"}
+[scheduler-1 pid=3328] {"event": "scan_completed", "records_scanned": 2, "run_id": 1, "tasks_created": 0, "timestamp": "2026-11-17T07:02:08.545016Z"}
+[scheduler-1 pid=3328] Adding job tentatively -- it will be properly scheduled when the scheduler starts
+[scheduler-1 pid=3328] Adding job tentatively -- it will be properly scheduled when the scheduler starts
+[scheduler-1 pid=3328] Adding job tentatively -- it will be properly scheduled when the scheduler starts
+[scheduler-1 pid=3328] Adding job tentatively -- it will be properly scheduled when the scheduler starts
+[scheduler-1 pid=3328] Adding job tentatively -- it will be properly scheduled when the scheduler starts
+[scheduler-1 pid=3328] {"event": "scheduler_started", "timestamp": "2026-11-17T07:02:08.938241Z"}
+[duplicate-guard exit=1] Another scheduler already owns the designated process lock.
+[fault-injection] Killed scheduler-1 (pid=3328, returncode=1); simulated interrupted_run_id=3, leased_job_id=11
+[scheduler-2 pid=13548] {"attempt": 1, "event": "lease_recovered", "job_id": 11, "terminal": false, "timestamp": "2026-11-17T07:02:14.668576Z"}
+[scheduler-2 pid=13548] {"attempt": 2, "event": "claimed", "job_id": 11, "timestamp": "2026-11-17T07:02:14.695579Z"}
+[scheduler-2 pid=13548] {"attempt": 2, "error_code": null, "event": "attempt_finished", "job_id": 11, "job_status": "succeeded", "outcome": "succeeded", "timestamp": "2026-11-17T07:02:14.732162Z"}
+[scheduler-2 pid=13548] {"event": "scan_completed", "records_scanned": 2, "run_id": 4, "tasks_created": 0, "timestamp": "2026-11-17T07:02:14.852644Z"}
+[scheduler-2 pid=13548] Adding job tentatively -- it will be properly scheduled when the scheduler starts
+[scheduler-2 pid=13548] Adding job tentatively -- it will be properly scheduled when the scheduler starts
+[scheduler-2 pid=13548] Adding job tentatively -- it will be properly scheduled when the scheduler starts
+[scheduler-2 pid=13548] Adding job tentatively -- it will be properly scheduled when the scheduler starts
+[scheduler-2 pid=13548] Adding job tentatively -- it will be properly scheduled when the scheduler starts
+[scheduler-2 pid=13548] {"event": "scheduler_started", "timestamp": "2026-11-17T07:02:15.236536Z"}
+[verified] run=3 status=failed(WORKER_INTERRUPTED); job=11 status=succeeded attempts=['interrupted', 'succeeded'] notifications_created=1
+[shutdown] Stopped scheduler-2 cleanly (returncode=1)

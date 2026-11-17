@@ -1,9 +1,11 @@
 # Miscellaneous
 *.class
 *.log
+!evidence/week16/logs/*.log
 .env
 .env.*
 !.env.example
+!deploy/.env.production.example
 # Local agent instructions and supplied assignment/specification documents.
 AGENTS.md
 **/AGENTS.md
@@ -48,6 +50,7 @@ migrate_working_dir/
 !/evidence/week13/
 !/evidence/week14/
 !/evidence/week15/
+!/evidence/week16/
 /docs/specification/
 
 # Local browser automation artifacts
